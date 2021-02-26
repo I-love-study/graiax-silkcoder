@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "graiax-silkcoder"
+version = "0.0.1"
+description = "transform audio file to silk"
+authors = ["I_love_study <1450069615@qq.com>"]
+license = "AGPL-3.0"
+readme = "README.md"
+homepage = "https://github.com/I-love-study/graiax-silkcoder"
+repository = "https://github.com/I-love-study/graiax-silkcoder"
+
+packages = [
+    { include = "graiax", from = "src" }
+]
+build = "build.py"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
