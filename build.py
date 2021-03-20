@@ -9,8 +9,8 @@ def get_file_list(path: str):
 
 ext_modules = [
     Extension('graiax.silkcoder._silkv3',
-        sources=get_file_list('lib/silkv3/src'),
-        include_dirs=["lib/silkv3/interface/"]
+        sources=get_file_list('graiax/silkcoder/_c_silkv3/src'),
+        include_dirs=["graiax/silkcoder/_c_silkv3/interface/"]
         )]
 
 class BuildFailed(Exception):

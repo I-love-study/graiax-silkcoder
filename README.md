@@ -22,4 +22,6 @@ await silkcoder.encode('a.wav', 'a.silk', ensure_ffmpeg=True)
 await silkcoder.encode('a.wav', 'a.silk', rate=70000)
 #你甚至可以剪辑音频
 await silkcoder.encode('a.wav', 'a.silk', ss=10, t=5)#从第10s开始剪辑5s的音频
+
+#至于silk解码，除了无法剪辑音频外，剩下的方法与encode基本一致
 ```
