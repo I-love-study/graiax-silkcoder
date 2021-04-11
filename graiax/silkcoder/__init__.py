@@ -31,11 +31,12 @@ class SilkCoder:
 		os.unlink(self.pcm.name)
 
 	@classmethod
+	@makesureinput(BytesIO_allowed=True)
 	async def from_wav(cls, file, ss, t):
 		"""从wav导入音频数据
 		注:wav只允许1-48000kHz 8-16bit音频
 		file是文件本身，也可以是bytesIOBytesIO实例"""
-		with makesureinput(file, BytesIO_allowed=True) as f, wave.open(f, 'rb') as wav:
+		with wave.open(file, 'rb') as wav:
 			wav_rate = wav.getframerate()
 			wav_channel = wav.getnchannels()
 			if ss or t:
@@ -47,63 +48,58 @@ class SilkCoder:
 			return cls(converted)
 
 	@classmethod
+	@makesureinput(BytesIO_allowed=False)
 	async def from_file(cls, file, audio_format, ss, t):
 		c = cls()
-		with makesureinput(file) as f:
-			cmd = ['ffmpeg']
-			if audio_format is not None: cmd.extend(['-f', audio_format])
-			cmd.extend(['-ss', ss, '-i', f, '-t', str(t)] if t else ['-i', f])
-			cmd.extend(['-af', 'aresample=resampler=soxr', '-ar', '24000', '-ac', '1', '-y' ,
-				'-loglevel', 'error', '-f', 's16le', c.pcm.name])
-			shell = await asyncio.create_subprocess_exec(*cmd)
-			await shell.wait()
-			if shell.returncode != 0:
-				raise CoderError(
-					"Decoding failed. ffmpeg returned error code: {0}\n\nOutput from ffmpeg/avlib:\n\n{1}".format(
-						p.returncode, p_err.decode(errors='ignore')))
+		cmd = ['ffmpeg']
+		if audio_format is not None: cmd.extend(['-f', audio_format])
+		cmd.extend(['-ss', ss, '-i', file, '-t', str(t)] if t else ['-i', file])
+		cmd.extend(['-af', 'aresample=resampler=soxr', '-ar', '24000', '-ac', '1', '-y' ,
+			'-loglevel', 'error', '-f', 's16le', c.pcm.name])
+		shell = await asyncio.create_subprocess_exec(*cmd,
+			stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+		p_out, p_err = await shell.communicate()
+		if shell.returncode != 0:
+			raise CoderError(f"ffmpeg error:\n{p_err.decode(errors='ignore')}")
 		return c
 
 	@classmethod
+	@makesureinput(BytesIO_allowed=False)
 	async def from_silk(cls, file):
-		with makesureinput(file) as f:
-			if not issilk(f):
-				raise CoderError("File is not the silkv3 format")
-			c = cls()
-			await to_thread(_silkv3.decode, f, c.pcm.name)
+		if not issilk(file):
+			raise CoderError("File is not the silkv3 format")
+		c = cls()
+		await to_thread(_silkv3.decode, file, c.pcm.name)
 		return c
 
+	@makesureoutput(BytesIO_allowed=True)
 	async def to_wav(self, file=None):
-		with makesureoutput(file, BytesIO_allowed=True) as f:
-			with wave.open(f, 'wb') as wav_out:
-				self.pcm.seek(0)
-				wav_out.setnchannels(1)
-				wav_out.setframerate(24000)
-				wav_out.setsampwidth(2)
-				wav_out.writeframes(self.pcm.read())
-			if file is None:
-				return Path(file).read_bytes()
+		with wave.open(file, 'wb') as wav_out:
+			self.pcm.seek(0)
+			wav_out.setnchannels(1)
+			wav_out.setframerate(24000)
+			wav_out.setsampwidth(2)
+			wav_out.writeframes(self.pcm.read())
 
+	@makesureoutput(BytesIO_allowed=False)
 	async def to_file(self, file=None, audio_format=None, ffmpeg_para=None, rate=None):
-		with makesureoutput(file) as f:
-			cmd = ['ffmpeg', '-f', 's16le', '-ar', '24000', '-ac', '1', '-i', self.pcm.name]
-			if audio_format is not None: cmd.extend(['-f', audio_format])
-			if rate is not None: cmd.extend(['-ab', rate])
-			if ffmpeg_para is not None: cmd.extend([str(a) for a in ffmpeg_para])
-			cmd.extend(['-y' ,'-loglevel', 'error', f])
-			shell = await asyncio.create_subprocess_exec(*cmd)
-			await shell.communicate()
-			if shell.returncode != 0:
-				raise CoderError(
-					"Encoding failed. ffmpeg returned error code: {0}\n\nOutput from ffmpeg/avlib:\n\n{1}".format(
-						p.returncode, p_err.decode(errors='ignore')))
-			if file is None:
-				return Path(f).read_bytes()
+		cmd = ['ffmpeg', '-f', 's16le', '-ar', '24000', '-ac', '1', '-i', self.pcm.name]
+		if audio_format is not None: cmd.extend(['-f', audio_format])
+		if rate is not None: cmd.extend(['-ab', rate])
+		if ffmpeg_para is not None: cmd.extend([str(a) for a in ffmpeg_para])
+		cmd.extend(['-y' ,'-loglevel', 'error', file])
+		shell = await asyncio.create_subprocess_exec(*cmd)
+		await shell.communicate()
+		if shell.returncode != 0:
+			raise CoderError(
+				"Encoding failed. ffmpeg returned error code: {0}\n\nOutput from ffmpeg/avlib:\n\n{1}".format(
+					p.returncode, p_err.decode(errors='ignore')))
+		if file is None:
+			return Path(file).read_bytes()
 
+	@makesureoutput(BytesIO_allowed=False)
 	async def to_silk(self,  file=None, rate=65000):
-		with makesureoutput(file) as f:
-			await to_thread(_silkv3.encode, self.pcm.name, file, rate)
-			if file is None:
-				return Path(f).read_bytes()
+		await to_thread(_silkv3.encode, self.pcm.name, file, rate)
 
 async def encode(
 	input_voice: Union[os.PathLike, str, BytesIO, bytes], 
