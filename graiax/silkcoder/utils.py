@@ -3,9 +3,8 @@ import wave
 import asyncio
 import inspect
 import tempfile
-import contextvars
 from io import BytesIO
-from functools import partial, wraps
+from functools import wraps
 
 def makesureinput(BytesIO_allowed=False):
     def decorator(func):
@@ -78,20 +77,13 @@ def makesureoutput(BytesIO_allowed=False):
         return wrapper
     return decorator
 
-async def to_thread(func, /, *args, **kwargs):
-    "Same as asyncio.to_thread in python 3.9+"
-    loop = asyncio.get_running_loop()
-    ctx = contextvars.copy_context()
-    func_call = partial(ctx.run, func, *args, **kwargs)
-    return await loop.run_in_executor(None, func_call)
-
 def issilk(file):
     if isinstance(file, BytesIO):
         file.seek(0)
-        return file.read(10) == b'\x02#!SILK_V3'
+        return file.read(10) in [b'\x02#!SILK_V3', b'#!SILK_V3']
     else:
         with open(file ,'rb') as fs:
-            return fs.read(10) == b'\x02#!SILK_V3'
+            return fs.read(10) in [b'\x02#!SILK_V3', b'#!SILK_V3']
 
 def iswave(file):
     try:
@@ -101,7 +93,34 @@ def iswave(file):
         return False
 
 def fsdecode(filename):
-    PathLikeTypes = (str, os.PathLike)
-    if isinstance(filename, PathLikeTypes):
+    if isinstance(filename, (str, os.PathLike)):
         return os.fsdecode(filename)
     raise TypeError(f"type {type(filename)} not accepted by fsdecode")
+
+def which(program):
+    """
+    Mimics behavior of UNIX which command.
+    """
+    # Add .exe program extension for windows support
+    if os.name == "nt" and not program.endswith(".exe"):
+        program += ".exe"
+
+    envdir_list = [os.curdir] + os.environ["PATH"].split(os.pathsep)
+
+    for envdir in envdir_list:
+        program_path = os.path.join(envdir, program)
+        if os.path.isfile(program_path) and os.access(program_path, os.X_OK):
+            return program_path
+
+def get_encoder_name():
+    """
+    Return enconder default application for system, either avconv or ffmpeg
+    """
+    if which("avconv"):
+        return "avconv"
+    elif which("ffmpeg"):
+        return "ffmpeg"
+    else:
+        # should raise exception
+        warn("Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work", RuntimeWarning)
+        return "ffmpeg"

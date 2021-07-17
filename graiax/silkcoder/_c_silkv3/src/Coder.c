@@ -358,12 +358,8 @@ static PyObject *encode_silk(PyObject *self, PyObject *args)
         printf( "\nAverage bitrate:                %.3f kbps", avg_rate  );
         printf( "\nActive bitrate:                 %.3f kbps", act_rate  );
         printf( "\n\n" );
-    } else {
-        /* print time and % of realtime */
-        printf("%.3f %.3f %d ", 1e-6 * tottime, 1e-4 * tottime / filetime, totPackets );
-        /* print average and active bitrates */
-        printf( "%.3f %.3f \n", avg_rate, act_rate );
     }
+
     Py_END_ALLOW_THREADS;
     Py_RETURN_TRUE;
 }
@@ -481,6 +477,7 @@ static PyObject *decode_silk(PyObject *self, PyObject *args)
     /* Initialize to one frame per packet, for proper concealment before first packet arrives */
     DecControl.framesPerPacket = 1;
 
+    Py_BEGIN_ALLOW_THREADS;
     /* Create decoder */
     ret = SKP_Silk_SDK_Get_Decoder_Size( &decSizeBytes );
     if( ret ) {
@@ -753,10 +750,8 @@ static PyObject *decode_silk(PyObject *self, PyObject *args)
         printf("\nFile length:                 %.3f s", filetime);
         printf("\nTime for decoding:           %.3f s (%.3f%% of realtime)", 1e-6 * tottime, 1e-4 * tottime / filetime);
         printf("\n\n");
-    } else {
-        /* print time and % of realtime */
-        printf( "%.3f %.3f %d\n", 1e-6 * tottime, 1e-4 * tottime / filetime, totPackets );
     }
+    Py_END_ALLOW_THREADS;
     Py_RETURN_TRUE;
 }
 

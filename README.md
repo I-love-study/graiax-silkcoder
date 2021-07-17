@@ -1,5 +1,12 @@
 # Graiax-silkcoder
 这，是一个Python的silk转码器
+
+## 安装
+```shell
+pip install graiax-silkcoder
+# 如果需要转换非wav的音频文件，则需要ffmpeg/anconv
+# 如何安装ffmpeg/anconv请自行百度
+```
 ## 使用方法
 ```python
 from pathlib import Path
