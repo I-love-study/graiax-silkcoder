@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "graiax-silkcoder"
-version = "0.0.10"
+version = "0.0.11"
 description = "transform audio file to silk"
 authors = ["I_love_study <1450069615@qq.com>"]
 license = "AGPL-3.0"

@@ -64,7 +64,7 @@ class SilkCoder:
 		c = cls()
 		cmd = [get_encoder_name()]
 		if audio_format is not None: cmd.extend(['-f', audio_format])
-		cmd.extend(['-ss', ss, '-i', file, '-t', str(t)] if t else ['-i', file])
+		cmd.extend(['-ss', str(ss), '-i', file, '-t', str(t)] if t else ['-i', file])
 		cmd.extend(['-af', 'aresample=resampler=soxr', '-ar', '24000', '-ac', '1', '-y' ,
 			'-loglevel', 'error', '-f', 's16le', c.pcm.name])
 		shell = await asyncio.create_subprocess_exec(*cmd,
@@ -100,7 +100,7 @@ class SilkCoder:
 				input_cmd = ["-i", "-"]
 			stdin_data = file.read() if isinstance(file, BytesIO) else file
 
-		cmd += ['-ss', ss, *input_cmd, '-t', t] if t else input_cmd
+		cmd += ['-ss', str(ss), *input_cmd, '-t', str(t)] if t else input_cmd
 		if ffmpeg_para: cmd += ffmpeg_para
 		cmd += ['-af', 'aresample=resampler=soxr', '-ar', '24000', '-ac', '1',
 			'-y' , '-vn', '-loglevel', 'error', '-f', 's16le', c.pcm.name]
