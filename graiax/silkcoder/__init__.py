@@ -156,7 +156,7 @@ class SilkCoder:
 		if ffmpeg_para is not None: cmd += [str(a) for a in ffmpeg_para]
 
 		if metadata is not None:
-			for key, value in tags.items():
+			for key, value in metadata.items():
 				cmd += ['-metadata', f'{key}={value}']
 
 		if sys.platform == 'darwin' and codec == 'mp3':
@@ -164,11 +164,11 @@ class SilkCoder:
 
 		cmd.extend(['-y' ,'-loglevel', 'error', file])
 		shell = await asyncio.create_subprocess_exec(*cmd)
-		await shell.communicate()
+		p_out, p_err = await shell.communicate()
 		if shell.returncode != 0:
 			raise CoderError(
 				"Encoding failed. ffmpeg returned error code: {0}\n\nOutput from ffmpeg/avlib:\n\n{1}".format(
-					p.returncode, p_err.decode(errors='ignore')))
+					shell.returncode, p_err.decode(errors='ignore')))
 		if file is None:
 			return Path(file).read_bytes()
 
