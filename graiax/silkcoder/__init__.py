@@ -1,3 +1,6 @@
+"""
+当你在使用这个
+"""
 import os
 import sys
 import wave
@@ -24,7 +27,9 @@ class CoderError(Exception):
 class SilkCoder:
 
 	def __init__(self, pcm_data=None):
-		"""注:pcm格式为24kHz 16bit mono"""
+		"""
+		pcm格式为24kHz 16bit mono
+		length为音频长度，单位为ms"""
 		self.pcm = tempfile.NamedTemporaryFile(mode="w+b", delete=False, suffix='.pcm')
 		if pcm_data: self.pcm.write(pcm_data)
 
@@ -75,6 +80,7 @@ class SilkCoder:
 		return c
 
 	@classmethod
+	@makesureinput(BytesIO_allowed=True)
 	async def from_file(cls, file, audio_format, codec, ffmpeg_para, ss, t):
 		"""
 		通过ffmpeg/anconv从其他音频格式导入音频数据
@@ -94,11 +100,9 @@ class SilkCoder:
 			input_cmd = ['-i', filename]
 			stdin_data = None
 		else:
-			if converter == 'ffmpeg':
-				input_cmd = ["-read_ahead_limit", "-1", "-i", "cache:pipe:0"]
-			else:
-				input_cmd = ["-i", "-"]
-			stdin_data = file.read() if isinstance(file, BytesIO) else file
+			input_cmd = (["-read_ahead_limit", "-1", "-i", "cache:pipe:0"] 
+				if converter == 'ffmpeg' else ["-i", "-"])
+			with open(file, 'rb') as f: stdin_data = f.read()
 
 		cmd += ['-ss', str(ss), *input_cmd, '-t', str(t)] if t else input_cmd
 		if ffmpeg_para: cmd += ffmpeg_para
@@ -169,16 +173,20 @@ class SilkCoder:
 			raise CoderError(
 				"Encoding failed. ffmpeg returned error code: {0}\n\nOutput from ffmpeg/avlib:\n\n{1}".format(
 					shell.returncode, p_err.decode(errors='ignore')))
-		if file is None:
-			return Path(file).read_bytes()
 
 	@makesureoutput(BytesIO_allowed=False)
-	async def to_silk(self, file=None, rate=65000):
+	async def to_silk(self, file=None, rate: int=None):
 		"""
 		导出slk(silkv3)格式音频文件
-		file可以是路径/BytesIO实例
+		file可以是路径/BytesIO实例，并返回None
 		如果file为None则返回二进制数据
+		rate为码率(单位为bps)
+		为None时将会尝试将音频保持在950kb上下
 		"""
+		if rate is None:
+			self.pcm.seek(0)
+			#保证压制出来的音频在1000kb上下，不超过1Mb
+			rate = min(int(1000*1024/(len(self.pcm.read())/24000/2)*8), 100000)
 		await asyncio.get_running_loop().run_in_executor(
 			None, _silkv3.encode, self.pcm.name, file, rate)
 
@@ -186,7 +194,7 @@ async def encode(
 	input_voice: Union[os.PathLike, str, BytesIO, bytes], 
 	output_voice: Union[os.PathLike, str, BytesIO, None]=None,
 	audio_format: str=None, codec: str=None,
-	ensure_ffmpeg: bool=False, rate: int=65000, 
+	ensure_ffmpeg: bool=False, rate: int=None, 
 	ffmpeg_para: list=None, ss: int=0, t: int=0
 	) -> Union[bool, tuple]:
 	"""
@@ -194,11 +202,11 @@ async def encode(
 
 	Args:
 		input_voice(os.PathLike, str, BytesIO, bytes) 输入文件
-		output_voice(os.PathLike, str, BytesIO, None) 输出文件(silk)，默认为None
+		output_voice(os.PathLike, str, BytesIO, None) 输出文件(silk)，默认为None，为None时将返回bytes
 		audio_format(str) 音频格式(如mp3, ogg) 默认为None(此时将由ffmpeg/avconv解析格式)
 		codec(str) 编码器(如果需要) 默认为None
 		ensure_ffmpeg(bool) 在音频能用wave库解析时是否强制使用ffmpeg/anconv导入 默认为False
-		rate(int) silk码率 默认为65000 区间为 (0,100000]
+		rate(int) silk码率 默认为None 此时编码器将会尝试将码率限制在1000kb(严守1Mb线)
 		ffmpeg_para(list) ffmpeg/avconc自定义参数 默认为None
 		ss(int) 开始读取时间,对应ffmpeg/avconc中的ss(只能精确到秒) 默认为0(如t为0则忽略)
 		t(int) 持续读取时间,对应ffmpeg/avconc中的t(只能精确到秒) 默认为0(不剪切)
@@ -207,7 +215,7 @@ async def encode(
 		pcm = await SilkCoder.from_wav(input_voice, ss, t)
 	else:
 		pcm = await SilkCoder.from_file(input_voice, audio_format, codec, ffmpeg_para, ss, t)
-	return await pcm.to_silk(output_voice)
+	return await pcm.to_silk(output_voice, rate)
 
 async def decode(
 	input_voice: Union[os.PathLike, str, BytesIO, bytes],
@@ -220,7 +228,7 @@ async def decode(
 
 	Args:
 		input_voice(os.PathLike, str, BytesIO, bytes) 输入文件(silk)
-		output_voice(os.PathLike, str, BytesIO, None) 输出文件，默认为None
+		output_voice(os.PathLike, str, BytesIO, None) 输出文件，默认为None，为None时将返回bytes
 		audio_format(str) 音频格式(如mp3, ogg) 默认为None(此时将由ffmpeg/avconv解析格式)
 		codec(str) 编码器(如果需要) 默认为None
 		ensure_ffmpeg(bool) 在音频能用wave库解析时是否强制使用ffmpeg/anconv导入 默认为False

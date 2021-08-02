@@ -16,14 +16,13 @@ def makesureinput(BytesIO_allowed=False):
             elif isinstance(file, bytes):
                 if BytesIO_allowed:
                     f = BytesIO(file)
-                    f.seek(0)
                 else:
                     tmp = tempfile.NamedTemporaryFile(mode="w+b", delete=False)
                     tmp.write(file)
+                    tmp.seek(0)
                     f = tmp.name
             elif isinstance(file, BytesIO):
                 if BytesIO_allowed:
-                    file.seek(0)
                     f = file
                 else:
                     tmp = tempfile.NamedTemporaryFile(mode="w+b", delete=False)
@@ -86,6 +85,7 @@ def issilk(file):
             return fs.read(10) in [b'\x02#!SILK_V3', b'#!SILK_V3']
 
 def iswave(file):
+    """判断音频是否能通过wave标准库解析"""
     try:
         wave.open(BytesIO(file) if type(file) is bytes else file)
         return True
@@ -98,9 +98,7 @@ def fsdecode(filename):
     raise TypeError(f"type {type(filename)} not accepted by fsdecode")
 
 def which(program):
-    """
-    Mimics behavior of UNIX which command.
-    """
+    """类似于 UNIX 中的 which 命令"""
     # Add .exe program extension for windows support
     if os.name == "nt" and not program.endswith(".exe"):
         program += ".exe"
@@ -113,14 +111,12 @@ def which(program):
             return program_path
 
 def get_encoder_name():
-    """
-    Return enconder default application for system, either avconv or ffmpeg
-    """
+    """获取本机拥有的编解码器"""
     if which("avconv"):
         return "avconv"
     elif which("ffmpeg"):
         return "ffmpeg"
     else:
-        # should raise exception
+        # 找不到，先警告一波
         warn("Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work", RuntimeWarning)
         return "ffmpeg"
