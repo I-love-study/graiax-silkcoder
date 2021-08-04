@@ -1,5 +1,6 @@
 """
-当你在使用这个
+一个不占GIL锁的SilkV3编解码器
+注：单个音频压制还是单线程，但是压制时不占用GIL锁
 """
 import os
 import sys
@@ -185,8 +186,8 @@ class SilkCoder:
 		"""
 		if rate is None:
 			self.pcm.seek(0)
-			#保证压制出来的音频在1000kb上下，不超过1Mb
-			rate = min(int(1000*1024/(len(self.pcm.read())/24000/2)*8), 100000)
+			#保证压制出来的音频在1000kb上下，若音频时常在10min以内而不超过1Mb
+			rate = min(int(980*1024/(len(self.pcm.read())/24000/2)*8), 100000)
 		await asyncio.get_running_loop().run_in_executor(
 			None, _silkv3.encode, self.pcm.name, file, rate)
 
@@ -206,7 +207,7 @@ async def encode(
 		audio_format(str) 音频格式(如mp3, ogg) 默认为None(此时将由ffmpeg/avconv解析格式)
 		codec(str) 编码器(如果需要) 默认为None
 		ensure_ffmpeg(bool) 在音频能用wave库解析时是否强制使用ffmpeg/anconv导入 默认为False
-		rate(int) silk码率 默认为None 此时编码器将会尝试将码率限制在1000kb(严守1Mb线)
+		rate(int) silk码率 默认为None 此时编码器将会尝试将码率限制在980kb(若时常在10min内，将严守1Mb线)
 		ffmpeg_para(list) ffmpeg/avconc自定义参数 默认为None
 		ss(int) 开始读取时间,对应ffmpeg/avconc中的ss(只能精确到秒) 默认为0(如t为0则忽略)
 		t(int) 持续读取时间,对应ffmpeg/avconc中的t(只能精确到秒) 默认为0(不剪切)

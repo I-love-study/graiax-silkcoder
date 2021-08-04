@@ -1,5 +1,6 @@
 # Graiax-silkcoder
 这，是一个Python的silk转码器
+将[kn007/silk-v3-decoder](https://github.com/kn007/silk-v3-decoder)通过简单的封装制成
 
 ## 安装
 ```shell
@@ -25,7 +26,7 @@ await silkcoder.encode(Path('a.wav').read_bytes(), audio_format='wav', 'a.silk')
 #注:只有当音频是wav且ensure_ffmpeg=None时才会不使用ffmpeg处理
 await silkcoder.encode('a.wav', 'a.silk')
 await silkcoder.encode('a.wav', 'a.silk', ensure_ffmpeg=True)
-#你也可以设置码率(默认65000)
+#你也可以设置码率(默认状态下将会将尝试将目标语音大小限制在980kb上下)
 await silkcoder.encode('a.wav', 'a.silk', rate=70000)
 #你甚至可以剪辑音频
 await silkcoder.encode('a.wav', 'a.silk', ss=10, t=5)#从第10s开始剪辑5s的音频
