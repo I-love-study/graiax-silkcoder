@@ -1,7 +1,7 @@
 # Graiax-silkcoder
-现在版本：![pypi](https://img.shields.io/pypi/v/graiax-silkcoder?color=blue)
-这，是一个Python的silk转码器
-通过将[kn007/silk-v3-decoder](https://github.com/kn007/silk-v3-decoder)通过简单的封装制成
+现在版本：![pypi](https://img.shields.io/pypi/v/graiax-silkcoder?color=blue)   
+这，是一个Python的silk转码器   
+通过将[kn007/silk-v3-decoder](https://github.com/kn007/silk-v3-decoder)通过简单的封装制成   
 
 ## 安装
 ```shell
