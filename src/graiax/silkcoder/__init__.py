@@ -103,7 +103,7 @@ class SilkCoder:
 		else:
 			input_cmd = (["-read_ahead_limit", "-1", "-i", "cache:pipe:0"] 
 				if converter == 'ffmpeg' else ["-i", "-"])
-			with open(file, 'rb') as f: stdin_data = f.read()
+			stdin_data = file.read() if isinstance(file, BytesIO) else file
 
 		cmd += ['-ss', str(ss), *input_cmd, '-t', str(t)] if t else input_cmd
 		if ffmpeg_para: cmd += ffmpeg_para
