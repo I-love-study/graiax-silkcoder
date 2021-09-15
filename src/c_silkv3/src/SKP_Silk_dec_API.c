@@ -253,7 +253,7 @@ void SKP_Silk_SDK_get_TOC(
         }
     }
     if( Silk_TOC->corrupt || sDec.FrameTermination == SKP_SILK_MORE_FRAMES || 
-        sDec.nFramesInPacket > SILK_MAX_FRAMES_PER_PACKET ) {
+        sDec.nFramesDecoded > SILK_MAX_FRAMES_PER_PACKET ) {
         /* Corrupt packet */
         SKP_memset( Silk_TOC, 0, sizeof( SKP_Silk_TOC_struct ) );
         Silk_TOC->corrupt = 1;
@@ -274,6 +274,6 @@ void SKP_Silk_SDK_get_TOC(
 /* Return a pointer to string specifying the version */ 
 const char *SKP_Silk_SDK_get_version()
 {
-    static const char version[] = "1.0.9.6";
+    static const char version[] = "1.0.9";
     return version;
 }
