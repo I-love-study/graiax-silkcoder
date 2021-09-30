@@ -87,7 +87,7 @@ def issilk(file):
 def iswave(file):
     """判断音频是否能通过wave标准库解析"""
     try:
-        wave.open(BytesIO(file) if type(file) is bytes else file)
+        wave.open(BytesIO(file) if type(file) is bytes else fsdecode(file))
         return True
     except (EOFError, wave.Error):
         return False
