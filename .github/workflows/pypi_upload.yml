@@ -32,17 +32,15 @@ jobs:
       - name: Get Lastest Environment
         run: |
           python -m pip install --upgrade pip
-          pip install setuptools wheel
+          pip install setuptools wheel twine
       
       - name: Setup Poetry
         uses: Gr1N/setup-poetry@v7
 
-      - name: Build It
-        run: poetry build
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          skip_existing: true
+      - name: Build and Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          poetry build
+          twine upload --skip-existing dist/*
