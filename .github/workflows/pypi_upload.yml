@@ -3,7 +3,7 @@ name: build multi version of python
 on:
   push:
     branches: [master]
-  pull_requests:
+  pull_request:
     branches: [master]
 
 jobs:
