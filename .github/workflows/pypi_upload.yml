@@ -27,7 +27,7 @@ jobs:
         uses: action/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-	        architecture: ${{ matrix.architecture }}
+          architecture: ${{ matrix.architecture }}
       
       - name: Get Lastest Environment
         run: |
