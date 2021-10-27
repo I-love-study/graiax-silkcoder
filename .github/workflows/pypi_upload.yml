@@ -1,0 +1,48 @@
+name: build multi version of python
+
+on:
+  push:
+    branches: [master]
+  pull_requests:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version:
+        - "3.8"
+        - "3.9"
+        - "3.10"
+	      architecture:
+        - x64
+        - x86
+      
+    name: build ${{ matrix.python-version }} sample
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: action/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+	        architecture: ${{ matrix.architecture }}
+      
+      - name: Get Lastest Environment
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel
+      
+      - name: Setup Poetry
+        uses: Gr1N/setup-poetry@v7
+
+      - name: Build It
+        run: poetry build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip_existing: true
