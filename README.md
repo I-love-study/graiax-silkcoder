@@ -36,16 +36,16 @@ await silkcoder.encode('a.wav', 'a.silk', ss=10, t=5)#从第10s开始剪辑5s的
 #你可以文件→文件
 await silkcoder.decode('a.silk', 'a.wav')
 #你可以文件→二进制数据
-silk: bytes=await silkcoder.decode('a.silk')
+wav: bytes=await silkcoder.decode('a.silk')
 #你可以二进制数据→二进制数据(必填audio_format)
-silk: bytes=await silkcoder.decode(Path('a.silk').read_bytes(), audio_format='mp3')
+mp3: bytes=await silkcoder.decode(Path('a.silk').read_bytes(), audio_format='mp3')
 #你可以二进制数据→文件
 await silkcoder.encode(Path('a.silk').read_bytes(), 'a.wav')
 #你可以指定让ffmpeg解码音频，也可以让程序自己选择
 #注:只有当音频是wav且ensure_ffmpeg=None时才会不使用ffmpeg处理
 await silkcoder.encode('a.wav', 'a.silk')
 await silkcoder.encode('a.wav', 'a.silk', ensure_ffmpeg=True)
-#你也可以设置码率(默认65000)
+#你也可以设置码率(不指定码率的情况下，程序将会尝试将音频大小控制在1Mb以下)
 await silkcoder.encode('a.wav', 'a.silk', rate=70000)
 #你甚至可以剪辑音频
 await silkcoder.encode('a.wav', 'a.silk', ss=10, t=5)#从第10s开始剪辑5s的音频
