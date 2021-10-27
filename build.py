@@ -1,8 +1,5 @@
-from distutils.core import Extension
-from distutils.core import Distribution
-from distutils.command.build_ext import build_ext
+from setuptools import Extension
 from glob import glob
-import shutil
 
 ext_modules = [
     Extension('graiax.silkcoder._silkv3',
