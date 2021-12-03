@@ -19,7 +19,7 @@ jobs:
         - x64
         - x86
       
-    name: build ${{ matrix.python-version }} sample
+    name: build ${{ matrix.python-version }} ${{ matrix.architecture }} sample
     steps:
       - uses: actions/checkout@v2
 

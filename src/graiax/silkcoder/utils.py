@@ -1,10 +1,17 @@
-import os
-import wave
 import asyncio
 import inspect
+import os
+import subprocess
 import tempfile
-from io import BytesIO
+import wave
 from functools import wraps
+from io import BytesIO
+
+try:
+    import imageio_ffmpeg
+    imageio_ffmpeg_exists = True
+except ImportError:
+    imageio_ffmpeg_exists = False
 
 def makesureinput(BytesIO_allowed=False):
     def decorator(func):
@@ -97,6 +104,13 @@ def fsdecode(filename):
         return os.fsdecode(filename)
     raise TypeError(f"type {type(filename)} not accepted by fsdecode")
 
+def soxr_available(ffmpeg_path: str):
+    p = subprocess.Popen(ffmpeg_path,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        encoding="utf-8")
+    return "--enable-libsoxr" in p.communicate()[1]
+
 def which(program):
     """类似于 UNIX 中的 which 命令"""
     # Add .exe program extension for windows support
@@ -110,13 +124,13 @@ def which(program):
         if os.path.isfile(program_path) and os.access(program_path, os.X_OK):
             return program_path
 
-def get_encoder_name():
+def get_ffmpeg():
     """获取本机拥有的编解码器"""
-    if which("avconv"):
-        return "avconv"
-    elif which("ffmpeg"):
+    if which("ffmpeg"):
         return "ffmpeg"
+    elif imageio_ffmpeg_exists:
+        return imageio_ffmpeg.get_ffmpeg_exe()
     else:
         # 找不到，先警告一波
-        warn("Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work", RuntimeWarning)
+        Warning("Couldn't find ffmpeg, maybe it'll not work")
         return "ffmpeg"
