@@ -18,7 +18,7 @@ pip install graiax-silkcoder[ffmpeg]
 你可以使用以下方法解决:
 ```python
 from graiax import silkcoder
-silkcoder.set_ffmpeg_path = "./ffmpeg"
+silkcoder.set_ffmpeg_path("./ffmpeg")
 ```
 
 ## 使用方法
