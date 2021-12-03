@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "graiax-silkcoder"
-version = "0.1.0"
+version = "0.1.1"
 description = "transform audio file to silk"
 authors = ["I_love_study <1450069615@qq.com>"]
 license = "AGPL-3.0"
@@ -22,6 +22,7 @@ build = "build.py"
 [tool.poetry.dependencies]
 #仅在python3.8+测试过，强烈建议赶紧用上Python3.8+
 python = "^3.6"
+imageio-ffmpeg = { version = "*", optional = true }
 
 [tool.poetry.extras]
 ffmpeg = ["imageio-ffmpeg"]
