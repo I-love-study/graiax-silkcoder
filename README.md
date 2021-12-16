@@ -23,6 +23,7 @@ silkcoder.set_ffmpeg_path("./ffmpeg")
 
 ## 使用方法
 ```python
+# 假设你是以 python -m asyncio 启动的python
 from pathlib import Path
 from graiax import silkcoder
 

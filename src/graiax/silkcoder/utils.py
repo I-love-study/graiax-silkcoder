@@ -86,10 +86,13 @@ def makesureoutput(BytesIO_allowed=False):
 def issilk(file):
     if isinstance(file, BytesIO):
         file.seek(0)
-        return file.read(10) in [b'\x02#!SILK_V3', b'#!SILK_V3']
+        f = file.read(10)
     else:
         with open(file ,'rb') as fs:
-            return fs.read(10) in [b'\x02#!SILK_V3', b'#!SILK_V3']
+            f = fs.read(10) 
+    
+    if f.startswith(b'\x02'): f = f[1:]
+    return f == b'#!SILK_V3'
 
 def iswave(file):
     """判断音频是否能通过wave标准库解析"""
