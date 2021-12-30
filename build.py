@@ -12,4 +12,3 @@ def build(setup_kwargs):
     This function is mandatory in order to build the extensions.
     """
     setup_kwargs["ext_modules"] = ext_modules
-    setup_kwargs["zip_safe"]    = False
