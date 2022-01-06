@@ -23,8 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup Python
-        uses: actions/setup-python@v2
+      - name: Setup Python & PDM
+        uses: pdm-project/setup-pdm@main
         with:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
@@ -34,13 +34,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install setuptools wheel twine
       
-      - name: Setup Poetry
-        uses: Gr1N/setup-poetry@v7
-
       - name: Build and Publish to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          poetry build
+          pdm build
           twine upload --skip-existing dist/*
