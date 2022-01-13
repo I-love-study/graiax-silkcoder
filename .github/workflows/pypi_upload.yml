@@ -34,7 +34,7 @@ jobs:
       - name: Install PDM
         uses: pdm-project/setup-pdm@main
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
       
       - name: Build SDist
