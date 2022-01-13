@@ -27,6 +27,9 @@ source-includes = [
     "src/c_silkv3/interface"
 ]
 
+[tool.cibuildwheel]
+skip = "pp*"
+
 [build-system]
 requires = ["pdm-pep517", "setuptools"]
 build-backend = "pdm.pep517.api"
