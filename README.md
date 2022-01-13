@@ -35,7 +35,7 @@ silk: bytes=await silkcoder.encode('a.wav')
 #你可以二进制数据→二进制数据
 silk: bytes=await silkcoder.encode(Path('a.wav').read_bytes())
 #你可以二进制数据→文件
-await silkcoder.encode(Path('a.wav').read_bytes(), audio_format='wav', 'a.silk')
+await silkcoder.encode(Path('a.wav').read_bytes(), 'a.silk', audio_format='wav')
 #你可以指定让ffmpeg解码音频，也可以让程序自己选择
 #注:只有当音频是wav且ensure_ffmpeg=None时才会不使用ffmpeg处理
 await silkcoder.encode('a.wav', 'a.silk', ensure_ffmpeg=True)
