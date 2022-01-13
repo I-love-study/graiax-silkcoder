@@ -30,12 +30,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
+      - name: Install PDM
+        uses: pdm-project/setup-pdm@main
         with:
-          fetch-depth: 0  # Optional, use if you use setuptools_scm
-          submodules: true  # Optional, use if you have submodules
-      - name: Build SDist
-        run: pipx run build --sdist
+          python-version: 3.10
+          architecture: x64
       
+      - name: Build SDist
+        run: |
+          pdm build --no-wheel
+
       - uses: actions/upload-artifact@v2
         with:
           path: dist/*.tar.gz
@@ -50,7 +55,7 @@ jobs:
           path: dist
       
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
