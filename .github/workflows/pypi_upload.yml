@@ -33,17 +33,12 @@ jobs:
       - name: Get Lastest Environment
         run: |
           python -m pip install --upgrade pip
-          pip install setuptools wheel twine
-      
-      - name: Setup PDM
-        shell: pwsh
-        run: |
-          (Invoke-WebRequest -Uri https://raw.githubusercontent.com/pdm-project/pdm/main/install-pdm.py -UseBasicParsing).Content | python -
+          pip install setuptools wheel twine pdm
 
       - name: Build and Publish to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          pdm build -v
+          python -m pdm build -v
           twine upload --skip-existing dist/*
