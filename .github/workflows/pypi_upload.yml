@@ -1,4 +1,4 @@
-name: build multi version of python
+name: Build & Publish
 
 on:
   push:
@@ -7,38 +7,52 @@ on:
     branches: [master]
 
 jobs:
-  build:
-    runs-on: windows-latest
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        python-version:
-        - "3.8"
-        - "3.9"
-        - "3.10"
-        architecture:
-        - x64
-        - x86
+         os: [ubuntu-latest, windows-latest]
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Build wheels
+      uses: pypa/cibuildwheel@v2.3.1
       
-    name: build ${{ matrix.python-version }} ${{ matrix.architecture }} sample
+    - uses: actions/upload-artifact@v2
+      with:
+        path: ./wheelhouse/*.whl
+      
+  make_sdist:
+    name: Make SDist
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
-      # 很可惜，因为 Setup PDM 并不会给你 C extension 环境支持，所以还要 setup python
-      - name: Setup Python
-        uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
-          architecture: ${{ matrix.architecture }}
+          fetch-depth: 0  # Optional, use if you use setuptools_scm
+          submodules: true  # Optional, use if you have submodules
+      - name: Build SDist
+        run: pipx run build --sdist
       
-      - name: Get Lastest Environment
-        run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel twine pdm
-
-      - name: Build and Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          python -m pdm build -v
-          twine upload --skip-existing dist/*
+      - uses: actions/upload-artifact@v2
+        with:
+          path: dist/*.tar.gz
+      
+  upload_all:
+    needs: [build_wheels, make_sdist]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: artifact
+          path: dist
+      
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip_existing: true
+          verbose: true
