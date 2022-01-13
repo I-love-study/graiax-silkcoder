@@ -23,7 +23,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup Python & PDM
+      # 很可惜，因为 Setup PDM 并不会给你 C extension 环境支持，所以还要 setup python
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.architecture }}
+
+      - name: Setup PDM
         uses: pdm-project/setup-pdm@main
         with:
           python-version: ${{ matrix.python-version }}
