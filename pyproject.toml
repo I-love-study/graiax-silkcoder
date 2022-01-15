@@ -1,6 +1,6 @@
 [project]
 name = "graiax-silkcoder"
-version = "0.1.4"
+version = "0.1.5"
 description = "transform audio file to silk"
 keywords = ["silkv3"]
 authors = [
@@ -28,6 +28,7 @@ source-includes = [
 ]
 
 [tool.cibuildwheel]
+# 没测过PyPy，先不build了
 skip = "pp*"
 
 [build-system]

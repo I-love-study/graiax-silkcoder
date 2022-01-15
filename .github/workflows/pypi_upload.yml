@@ -8,18 +8,25 @@ on:
 
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.os }} & ${{ cibw_python }} ${{ cibw_arch }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
          os: [ubuntu-latest, windows-latest]
+         cibw_python: ["cp36-*", "cp37-*", "cp38-*", "cp39-*", "cp310-*"]
+         cibw_arch: ["auto64", "auto32"]
 
     steps:
     - uses: actions/checkout@v2
-    
+
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.3.1
+      env:
+        CIBW_BUILD_VERBOSITY: 1
+        CIBW_BUILD: ${{ matrix.cibw_python }}
+        CIBW_ARCHS: ${{ matrix.cibw_arch }}
+
       
     - uses: actions/upload-artifact@v2
       with:
@@ -33,8 +40,6 @@ jobs:
 
       - name: Install PDM
         uses: pdm-project/setup-pdm@main
-        with:
-          python-version: "3.10"
       
       - name: Build SDist
         run: |
