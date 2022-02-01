@@ -1,27 +1,33 @@
 # Graiax-silkcoder
-现在版本：![pypi](https://img.shields.io/pypi/v/graiax-silkcoder?color=blue)   
-这，是一个Python的silk转码器   
-通过将[kn007/silk-v3-decoder](https://github.com/kn007/silk-v3-decoder)通过简单的封装制成   
+
+现在版本：![pypi](https://img.shields.io/pypi/v/graiax-silkcoder?color=blue)  
+这，是一个Python的silk转码器  
+通过将[kn007/silk-v3-decoder](https://github.com/kn007/silk-v3-decoder)通过简单的封装制成
 
 ## 安装
+
 ```shell
 # 如果需要转换非wav的音频文件，则需要自行安装ffmpeg
 pip install graiax-silkcoder
 # 也可以通过下面的方式使用imageio-ffmpeg中的ffmpeg
 pip install graiax-silkcoder[ffmpeg]
 ```
+
 注: 假设你是Windows用户，安装时出现了`error: Microsoft Visual C++ 14.0 is required:`
 请安装[Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 
 ### 自定义ffmpeg_path
+
 可能有一些用户会想要自定义ffmpeg的路径
 你可以使用以下方法解决:
+
 ```python
 from graiax import silkcoder
 silkcoder.set_ffmpeg_path("./ffmpeg")
 ```
 
 ## 使用方法
+
 ```python
 # 假设你是以 python -m asyncio 启动的python
 from pathlib import Path

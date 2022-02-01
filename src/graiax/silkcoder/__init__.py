@@ -9,7 +9,7 @@ import asyncio
 import audioop
 import tempfile
 from io import BytesIO
-from typing import Union
+from typing import Optional, Union
 
 from . import _silkv3
 from .utils import (
@@ -210,7 +210,7 @@ async def encode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
                  rate: int = None,
                  ffmpeg_para: list = None,
                  ss: int = 0,
-                 t: int = 0) -> Union[bool, tuple]:
+                 t: int = 0) -> Optional[bytes]:
     """
 	将音频文件转化为silk文件
 
@@ -239,7 +239,7 @@ async def decode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
                  ensure_ffmpeg: bool = False,
                  rate: int = None,
                  metadata: dict = None,
-                 ffmpeg_para: list = None) -> Union[bool, tuple]:
+                 ffmpeg_para: list = None) -> Optional[bytes]:
     """
 	将silkv3音频转换为其他音频格式
 
