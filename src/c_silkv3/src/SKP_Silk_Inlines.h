@@ -26,7 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 /*! \file SKP_Silk_Inlines.h
- *  \brief SigProcFix_Inlines.h defines inline signal processing functions.
+ *  \brief SKP_Silk_Inlines.h defines inline signal processing functions.
  */
 
 #ifndef _SKP_SILK_FIX_INLINES_H_

@@ -130,3 +130,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#爷自己的实验室
+test/
+compile_flags.txt

@@ -1,0 +1,9 @@
+{
+    "C_Cpp.default.systemIncludePath": [
+        "D:\\Python310\\include"
+    ],
+    "C_Cpp.default.includePath": [
+        "E:\\\\Code\\\\QQWechat\\\\graia_framework\\\\graiax-silkcoder\\\\src\\\\silk-ARM_v1.0.9\\\\interface"
+    ],
+    "clangd.checkUpdates": true
+}
