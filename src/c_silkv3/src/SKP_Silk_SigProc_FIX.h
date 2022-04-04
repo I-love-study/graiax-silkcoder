@@ -40,33 +40,7 @@ extern "C"
 #include <stdlib.h>                                            /* for abs() */
 #include "SKP_Silk_resampler_structs.h"
 
-#ifndef NO_ASM
-#	if defined (__ARM_ARCH_4__) || defined (__ARM_ARCH_4T__) || defined (__ARM_ARCH_5__) || defined (__ARM_ARCH_5T__)
-#		define EMBEDDED_ARM 4
-#		define EMBEDDED_ARMv4
-#		include "SKP_Silk_macros_arm.h"
-#	elif defined (__ARM_ARCH_5TE__) || defined (__ARM_ARCH_5TEJ__)
-#		define EMBEDDED_ARM 5
-#		define EMBEDDED_ARMv5
-#		include "SKP_Silk_macros_arm.h"	
-#	elif defined (__ARM_ARCH_6__) ||defined (__ARM_ARCH_6J__) || defined (__ARM_ARCH_6Z__) || defined (__ARM_ARCH_6K__) || defined(__ARM_ARCH_6ZK__) || defined(__ARM_ARCH_6T2__)
-#		define EMBEDDED_ARM 6
-#		define EMBEDDED_ARMv6
-#		include "SKP_Silk_macros_arm.h"
-#	elif defined (__ARM_ARCH_7A__) && defined (__ARM_NEON__)
-#		define EMBEDDED_ARM 7
-#		define EMBEDDED_ARMv6
-#		include "SKP_Silk_macros_arm.h"
-#	elif defined (__ARM_ARCH_7A__)
-#		define EMBEDDED_ARM 6
-#		define EMBEDDED_ARMv6
-#		include "SKP_Silk_macros_arm.h"
-#	else
-#		include "SKP_Silk_macros.h"
-#	endif
-#else
 #	include "SKP_Silk_macros.h"
-#endif
 
 
 
@@ -492,15 +466,7 @@ SKP_INLINE SKP_int32 SKP_ROR32( SKP_int32 a32, SKP_int rot )
 #endif
 
 /* Allocate SKP_int16 alligned to 4-byte memory address */
-#if EMBEDDED_ARM
-#if defined(_WIN32) && defined(_M_ARM)
-#define SKP_DWORD_ALIGN __declspec(align(4))
-#else
-#define SKP_DWORD_ALIGN __attribute__((aligned(4)))
-#endif
-#else
 #define SKP_DWORD_ALIGN
-#endif
 
 /* Useful Macros that can be adjusted to other platforms */
 #define SKP_memcpy(a, b, c)                memcpy((a), (b), (c))    /* Dest, Src, ByteCount */

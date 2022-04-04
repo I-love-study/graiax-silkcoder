@@ -6,7 +6,11 @@ from typing import List, Union
 from .utils import CoderError, get_ffmpeg, soxr_available
 
 ffmpeg_coder = get_ffmpeg()
-soxr = soxr_available(ffmpeg_coder)
+if ffmpeg_coder is not None:
+    soxr = soxr_available(ffmpeg_coder)
+else:
+    # 因为不知道到底有没有 ffmpeg，所以默认不使用 soxr
+    ffmpeg_coder, soxr = "ffmpeg", False
 
 
 def get_ffmpeg_encode_cmd(audio_format: str, codec: str, ss: int, t: int, ffmpeg_para: List[str]):

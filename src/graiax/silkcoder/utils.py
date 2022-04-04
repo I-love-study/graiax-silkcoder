@@ -11,9 +11,11 @@ try:
 except ImportError:
     imageio_ffmpeg_exists = False
 
+
 class CoderError(Exception):
     """所有编码/解码的错误"""
     pass
+
 
 def input_transform(input_: Union[os.PathLike, str, BytesIO, bytes]) -> bytes:
     if isinstance(input_, (os.PathLike, str)):
@@ -37,6 +39,7 @@ def output_transform(output_: Union[os.PathLike, str, BytesIO, None],
     else:
         raise ValueError("Unsupport format")
 
+
 def iswave(data: bytes):
     """判断音频是否能通过wave标准库解析"""
     try:
@@ -44,6 +47,13 @@ def iswave(data: bytes):
         return True
     except (EOFError, wave.Error):
         return False
+
+
+def issilk(data: bytes):
+    """判断音频是否为silkv3格式"""
+    f = data[1:11] if data.startswith(b'\x02') else data[:9]
+    return f == b"#!SILK_V3"
+
 
 def soxr_available(ffmpeg_path: str):
     p = subprocess.Popen(ffmpeg_path,
@@ -72,8 +82,10 @@ def get_ffmpeg():
     if which("ffmpeg"):
         return "ffmpeg"
     elif imageio_ffmpeg_exists:
-        return imageio_ffmpeg.get_ffmpeg_exe()
+        try:
+            return imageio_ffmpeg.get_ffmpeg_exe()
+        except RuntimeError:
+            Warning("Couldn't find ffmpeg, maybe it'll not work")
     else:
         # 找不到，先警告一波
         Warning("Couldn't find ffmpeg, maybe it'll not work")
-        return "ffmpeg"

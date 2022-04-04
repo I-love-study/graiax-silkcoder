@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * Date: 060221                                                         *
  *                                                                      */
 #include "SKP_Silk_SigProc_FIX.h"
-#if EMBEDDED_ARM<4
 /********************************/
 /* approximate sigmoid function */
 /********************************/
@@ -76,5 +75,4 @@ SKP_int SKP_Silk_sigm_Q15( SKP_int in_Q5 )
         }
     }
 }
-#endif
 

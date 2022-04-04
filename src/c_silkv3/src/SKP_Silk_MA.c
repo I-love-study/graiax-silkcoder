@@ -35,7 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *                                                                      */
 #include "SKP_Silk_SigProc_FIX.h"
 
-#if EMBEDDED_ARM<5
 /* Variable order MA prediction error filter */
 void SKP_Silk_MA_Prediction(
     const SKP_int16      *in,            /* I:   Input signal                                */
@@ -63,9 +62,7 @@ void SKP_Silk_MA_Prediction(
         out[ k ] = (SKP_int16)SKP_SAT16( out32 );
     }
 }
-#endif
 
-#if EMBEDDED_ARM<5
 
 void SKP_Silk_LPC_analysis_filter(
     const SKP_int16      *in,            /* I:   Input signal                                */
@@ -116,5 +113,4 @@ void SKP_Silk_LPC_analysis_filter(
         S[ 0 ] = in[ k ];
     }
 }
-#endif
 
