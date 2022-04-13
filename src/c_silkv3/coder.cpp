@@ -84,7 +84,7 @@ static PyObject *encode_silk(PyObject *self, PyObject *args) {
       break;
 
     counter = (frameSizeReadFromFile_ms * API_fs_Hz) / 1000;
-    if ((int)counter > psReadEnd - psRead) {
+    if (counter * sizeof(SKP_int16) > psReadEnd - psRead) {
       memset(in, 0x00, sizeof(in));
 
       size_t realrd = (psReadEnd - psRead);
