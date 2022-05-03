@@ -6,6 +6,8 @@
 
 ## 安装
 
+### 从 PyPI
+
 ```shell
 # 如果需要转换非wav的音频文件，则需要自行安装ffmpeg
 pip install graiax-silkcoder
@@ -15,6 +17,14 @@ pip install graiax-silkcoder[ffmpeg]
 
 注: 假设你是Windows用户，安装时出现了`error: Microsoft Visual C++ 14.0 is required:`
 请安装[Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+
+### 从 conda-forge
+
+```shell
+conda install graiax-silkcoder -c conda-forge
+# 如果需要 ffmpeg，可以一并从 conda-forge 安装
+conda install ffmpeg -c conda-forge
+```
 
 ### 自定义ffmpeg_path
 
