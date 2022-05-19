@@ -11,6 +11,8 @@
 pip install graiax-silkcoder
 # 也可以通过下面的方式使用imageio-ffmpeg中的ffmpeg
 pip install graiax-silkcoder[ffmpeg]
+#  在 0.3.0 后，可以通过以下方式使用libsndfile来解析音频
+pip install graiax-silkcoder[libsndfile]
 ```
 
 注: 假设你是Windows用户，安装时出现了`error: Microsoft Visual C++ 14.0 is required:`
@@ -25,6 +27,27 @@ pip install graiax-silkcoder[ffmpeg]
 from graiax import silkcoder
 silkcoder.set_ffmpeg_path("./ffmpeg")
 ```
+
+## CLI（0.2.0新增）
+
+使用办法
+
+```bash
+# 其他参数与encode / decode 保持一致
+python -m graiax.silkcoder encode -i "a.wav" "a.silk"
+python -m graiax.silkcoder decode -i "a.silk" "a.wav"
+```
+
+## 是 `ffmpeg` 还是 `libsndfile`
+
+在该项目最开始的时候，就有人吐槽过：为了简简单单的音频转换去下载一个大的离谱的 ffmpeg，这也太麻了吧。（注：虽然说 ffmpeg 可以通过 disable 一大堆不必要视频处理库来达到减小体积的目的，但是这需要自己编译，对小白挺不友好的）
+
+所以，从 0.3.0 开始，开始增加了通过 libsndfile 来使用解析音频。
+
+> libsndfile 是一款广泛用于读写音频文件的C语言库，
+他支持包括 flac, ogg, opus, mp3<sup>[1](##注)</sup>等多种格式。
+
+因为
 
 ## 使用方法
 
@@ -107,12 +130,7 @@ await silkcoder.async_decode('a.silk', 'a.wav', ensure_ffmpeg=True)
 await silkcoder.async_decode('a.silk', 'a.mp3', ffmpeg_para=['-ab', '320k'])
 ```
 
-## CLI（0.2.0新增）
+## 注
 
-使用办法
-
-```bash
-# 其他参数与encode / decode 保持一致
-python -m graiax.silkcoder encode -i "a.wav" "a.silk"
-python -m graiax.silkcoder decode -i "a.silk" "a.wav"
-```
+1. libsndfile 分别在 1.0.31 和 1.1.0 开始支持的 opus, mp3，而 `graiax-silkcoder` 的依赖库之一 `soundfile` 直到现在并没有加上对这两种格式的支持（其最新版带的 lib 甚至还是 1.0.28）
+2. 系统

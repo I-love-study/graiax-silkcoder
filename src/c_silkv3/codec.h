@@ -43,12 +43,6 @@ void swap_endian(SKP_int16 vec[], SKP_int len) {
 }
 #endif
 
-#if (defined(_WIN32) || defined(_WINCE))
-#include <windows.h> /* timer */
-#else                // Linux or Mac
-#include <sys/time.h>
-#endif
-
 /* Seed for the random number generator, which is used for simulating packet
  * loss */
 static SKP_int32 rand_seed = 1;

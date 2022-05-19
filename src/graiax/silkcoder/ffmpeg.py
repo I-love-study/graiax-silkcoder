@@ -8,9 +8,11 @@ from .utils import CoderError, get_ffmpeg, soxr_available
 ffmpeg_coder = get_ffmpeg()
 if ffmpeg_coder is not None:
     soxr = soxr_available(ffmpeg_coder)
+    ffmpeg_available = True
 else:
     # 因为不知道到底有没有 ffmpeg，所以默认不使用 soxr
     ffmpeg_coder, soxr = "ffmpeg", False
+    ffmpeg_available = False
 
 
 def get_ffmpeg_encode_cmd(audio_format: str, codec: str, ss: int, t: int, ffmpeg_para: List[str]):
@@ -110,4 +112,4 @@ async def async_ffmpeg_decode(data: bytes,
     return p_out
 
 
-__all__ = ["ffmpeg_encode", "ffmpeg_decode", "async_ffmpeg_encode", "async_ffmpeg_decode"]
+__all__ = ["ffmpeg_encode", "ffmpeg_decode", "async_ffmpeg_encode", "async_ffmpeg_decode", "ffmpeg_available"]

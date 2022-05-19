@@ -12,6 +12,7 @@ requires-python = ">=3.6"
 license = {text = "BSD-3-Clause"}
 
 [project.optional-dependencies]
+libsndfile = ["soundfile", "soxr"]
 ffmpeg = ["imageio-ffmpeg"]
 
 [project.urls]

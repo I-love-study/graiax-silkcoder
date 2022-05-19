@@ -11,6 +11,12 @@ try:
 except ImportError:
     imageio_ffmpeg_exists = False
 
+try:
+    import soundfile
+    soundfile_supported = True
+except ImportError:
+    soundfile_supported = False
+
 
 class CoderError(Exception):
     """所有编码/解码的错误"""
@@ -53,6 +59,22 @@ def issilk(data: bytes):
     """判断音频是否为silkv3格式"""
     f = data[1:11] if data.startswith(b'\x02') else data[:9]
     return f == b"#!SILK_V3"
+
+
+def is_libsndfile_supported(data: Union[bytes, str]):
+    """判断是否被当前libsndfile所支持
+    当传入 bytes 的时候，判断是否能被 libsndfile 解析
+    当传入 str 的时候，判断该字符串是否在 available_formats 中"""
+    if not soundfile_supported:
+        return False
+    if isinstance(data, bytes):
+        try:
+            soundfile.info(BytesIO(data))
+            return True
+        except RuntimeError:
+            return False
+    elif isinstance(data, str):
+        return data in soundfile.available_formats()
 
 
 def soxr_available(ffmpeg_path: str):
