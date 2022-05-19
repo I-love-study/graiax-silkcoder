@@ -17,7 +17,8 @@ def wav_encode(data: bytes, ss: int = 0, t: int = 0):
         else:
             wav_data = wav.readframes(wav.getnframes())
 
-        wav_data = audioop.ratecv(wav_data, wav_width, 1, wav_rate, 24000, None)[0]
+        if wav_rate != 24000:
+            wav_data = audioop.ratecv(wav_data, wav_width, wav_channel, wav_rate, 24000, None)[0]
         if wav_channel != 1:
             wav_data = audioop.tomono(wav_data, wav_width, 0.5, 0.5)
         if wav_width != 2:
