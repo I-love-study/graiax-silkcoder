@@ -21,7 +21,9 @@ async def async_encode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
                        rate: int = None,
                        ffmpeg_para: list = None,
                        ss: int = 0,
-                       t: int = 0) -> Optional[bytes]:
+                       t: int = 0,
+                       tencent: bool = True,
+                       adaptive_rate: bool = True) -> Optional[bytes]:
     """
     将音频文件转化为silk文件
 
@@ -45,7 +47,7 @@ async def async_encode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
     else:
         pcm = await async_ffmpeg_encode(input_bytes, audio_format, codec, ss, t, ffmpeg_para)
 
-    silk = await async_silk_encode(pcm, rate)
+    silk = await async_silk_encode(pcm, rate, tencent, adaptive_rate)
 
     return output_transform(output_voice, silk)
 
@@ -92,7 +94,9 @@ def encode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
            rate: int = None,
            ffmpeg_para: list = None,
            ss: int = 0,
-           t: int = 0) -> Optional[bytes]:
+           t: int = 0,
+           tencent: bool = True,
+           adaptive_rate: bool = True) -> Optional[bytes]:
     """
     将音频文件转化为silk文件
 
@@ -115,7 +119,7 @@ def encode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
         pcm = wav_encode(input_bytes, ss, t)
     else:
         pcm = ffmpeg_encode(input_bytes, audio_format, codec, ss, t, ffmpeg_para)
-    silk = silk_encode(pcm, rate)
+    silk = silk_encode(pcm, rate, tencent, adaptive_rate)
 
     return output_transform(output_voice, silk)
 

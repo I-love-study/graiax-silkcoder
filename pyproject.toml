@@ -1,6 +1,6 @@
 [project]
 name = "graiax-silkcoder"
-version = "0.2.4"
+version = "0.2.5"
 description = "transform audio file to silk"
 keywords = ["silkv3"]
 authors = [
