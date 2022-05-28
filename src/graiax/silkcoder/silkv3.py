@@ -2,22 +2,20 @@ from . import _silkv3
 import asyncio
 
 
-def silk_encode(data: bytes, rate: int = None, tencent: bool = True, adaptive_rate: bool = True):
+def silk_encode(data: bytes, rate: int = None, tencent: bool = True, ios_adaptive: bool = False):
     if rate is None:
         #保证压制出来的音频在1000kb上下，若音频时常在10min以内而不超过1Mb
-        rate = (min(int(980 * 1024 / (len(data) / 24000 / 2) * 8), 100000) 
-                if adaptive_rate else 24000)
+        rate = min(int(980 * 1024 / (len(data) / 24000 / 2) * 8), 24000 if ios_adaptive else 100000)
     return _silkv3.encode(data, rate, tencent)
 
 
 async def async_silk_encode(data: bytes,
                             rate: int = None,
                             tencent: bool = True,
-                            adaptive_rate: bool = True):
+                            ios_adaptive: bool = False):
     if rate is None:
         #保证压制出来的音频在1000kb上下，若音频时常在10min以内而不超过1Mb
-        rate = (min(int(980 * 1024 / (len(data) / 24000 / 2) * 8), 100000) 
-                if adaptive_rate else 24000)
+        rate = min(int(980 * 1024 / (len(data) / 24000 / 2) * 8), 24000 if ios_adaptive else 100000)
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, _silkv3.encode, data, rate, tencent)
 

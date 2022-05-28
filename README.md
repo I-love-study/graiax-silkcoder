@@ -26,6 +26,21 @@ conda install graiax-silkcoder -c conda-forge
 conda install ffmpeg -c conda-forge
 ```
 
+## Q&A
+
+### ImportError：DLL load failed while importing _silkv3：找不到指定的模块
+
+相关issue: #23
+
+现在本库已经通过 `Github Actions` 来预编译 whl 了，出现这种问题一般不是说没有编译。  
+如果遇到这种问题，请在[这里](https://aka.ms/vs/17/release/vc_redist.x64.exe)下载最新版本的 **C++ Redistributable**
+
+### IOS 音频问题
+
+IOS 的音频解码器因为某些**特性**，只支持解码 **25kbps 以下** 的音频。  
+所以在 0.2.6 中，我们新增了一个 `ios_adaptive` 参数（默认为 False）。
+当为 True 时，将把自适应最高码率限制在 24kbps 以下（一般是限制在 100kbps 以下）
+
 ### 自定义ffmpeg_path
 
 可能有一些用户会想要自定义ffmpeg的路径
