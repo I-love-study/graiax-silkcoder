@@ -1,6 +1,37 @@
 #include "SKP_Silk_typedef.h"
 #include "codec.h"
 
+std::string GetRaise(int i) {
+  switch (i) {
+  case -1:
+    return "SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES";
+  case -2:
+    return "SILK_ENC_FS_NOT_SUPPORTED";
+  case -3:
+    return "SILK_ENC_PACKET_SIZE_NOT_SUPPORTED";
+  case -4:
+    return "SILK_ENC_PAYLOAD_BUF_TOO_SHORT";
+  case -5:
+    return "SILK_ENC_INVALID_LOSS_RATE";
+  case -6:
+    return "SILK_ENC_INVALID_COMPLEXITY_SETTING";
+  case -7:
+    return "SILK_ENC_INVALID_INBAND_FEC_SETTING";
+  case -8:
+    return "SILK_ENC_INVALID_DTX_SETTING";
+  case -9:
+    return "SILK_ENC_INTERNAL_ERROR";
+  case -10:
+    return "SILK_DEC_INVALID_SAMPLING_FREQUENCY";
+  case -11:
+    return "SILK_DEC_PAYLOAD_TOO_LARGE";
+  case -12:
+    return "SILK_DEC_PAYLOAD_ERROR";
+  default:
+    return "SILK_UNKNOWN_ERROR";
+  }
+};
+
 static PyObject *encode_silk(PyObject *self, PyObject *args) {
   size_t counter;
   SKP_int16 nBytes;
@@ -152,176 +183,14 @@ static PyObject *encode_silk(PyObject *self, PyObject *args) {
 failed:
   if (psEnc)
     free(psEnc);
+  std::string exception = ret ? GetRaise(ret) : "UNKNOWN_ERROR";
   PyErr_SetString(
       PyErr_NewException("graiax.silkcoder.codec.error", NULL, NULL),
-      "encoder error");
+      exception.c_str());
   return 0;
 }
 
-static PyObject *decode_silk1(PyObject *self, PyObject *args) {
-  SKP_uint8
-      payload[MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES * (MAX_LBRR_DELAY + 1)];
-  SKP_uint8 *payloadEnd = NULL, *payloadToDec = NULL;
-  SKP_int16 nBytesPerPacket[MAX_LBRR_DELAY + 1];
-  SKP_int16 out[((FRAME_LENGTH_MS * MAX_API_FS_KHZ) << 1) * MAX_INPUT_FRAMES],
-      *outPtr;
-  SKP_int32 remainPackets = 0;
-  SKP_int16 len, nBytes, totalLen = 0;
-  SKP_int32 decSizeBytes, result, silkDataSize;
-  unsigned char *silkData;
-  std::vector<unsigned char> outputData;
-
-  if (!PyArg_ParseTuple(args, "s#", &silkData, &silkDataSize))
-    return NULL;
-
-  unsigned char *psRead = silkData;
-  void *psDec = NULL;
-
-  SKP_SILK_SDK_DecControlStruct DecControl;
-
-  /* Check Silk header */
-  if (strncmp((char *)psRead, "#!SILK_V3", 9) == 0)
-    psRead += 9;
-  else if (strncmp((char *)psRead, "\x02#!SILK_V3", 10) == 0)
-    psRead += 10;
-  else
-    goto failed;
-
-  /* Create decoder */
-  result = SKP_Silk_SDK_Get_Decoder_Size(&decSizeBytes);
-  if (result)
-    goto failed;
-
-  /* Reset decoder */
-  psDec = malloc(decSizeBytes);
-  result = SKP_Silk_SDK_InitDecoder(psDec);
-  if (result)
-    goto failed;
-
-  payloadEnd = payload;
-  DecControl.framesPerPacket = 1;
-  DecControl.API_sampleRate = 24000;
-
-  /* Simulate the jitter buffer holding MAX_FEC_DELAY packets */
-  for (int i = 0; i < MAX_LBRR_DELAY; i++) {
-
-    /* Read payload size */
-    nBytes = *(SKP_int16 *)psRead;
-    psRead += sizeof(SKP_int16);
-
-#ifdef _SYSTEM_IS_BIG_ENDIAN
-    swap_endian(&nBytes, 1);
-#endif
-
-    /* Read payload */
-    memcpy(payloadEnd, (SKP_uint8 *)psRead, nBytes);
-    psRead += sizeof(SKP_uint8) * nBytes;
-
-    nBytesPerPacket[i] = nBytes;
-    payloadEnd += nBytes;
-  }
-
-  nBytesPerPacket[MAX_LBRR_DELAY] = 0;
-
-  Py_BEGIN_ALLOW_THREADS;
-
-  while (1) {
-
-    if (remainPackets == 0) {
-
-      /* Read payload size */
-      nBytes = *(SKP_int16 *)psRead;
-      psRead += sizeof(SKP_int16);
-
-#ifdef _SYSTEM_IS_BIG_ENDIAN
-      swap_endian(&nBytes, 1);
-#endif
-
-      if (nBytes < 0 || psRead - silkData >= silkDataSize) {
-        remainPackets = MAX_LBRR_DELAY;
-        goto decode;
-      }
-
-      /* Read payload */
-      memcpy(payloadEnd, (SKP_uint8 *)psRead, nBytes);
-      psRead += sizeof(SKP_uint8) * nBytes;
-
-    } else if (--remainPackets <= 0)
-      break;
-
-  decode:
-    if (nBytesPerPacket[0] != 0) {
-      nBytes = nBytesPerPacket[0];
-      payloadToDec = payload;
-    }
-
-    outPtr = out;
-    totalLen = 0;
-    int frames = 0;
-
-    /* Decode all frames in the packet */
-    do {
-      /* Decode 20 ms */
-      SKP_Silk_SDK_Decode(psDec, &DecControl, 0, payloadToDec, nBytes, outPtr,
-                          &len);
-
-      frames++;
-      outPtr += len;
-      totalLen += len;
-
-      if (frames > MAX_INPUT_FRAMES) {
-        /* Hack for corrupt stream that could generate too many frames */
-        outPtr = out;
-        totalLen = 0;
-        frames = 0;
-      }
-
-      /* Until last 20 ms frame of packet has been decoded */
-    } while (DecControl.moreInternalDecoderFrames);
-
-    /* Write output to file */
-#ifdef _SYSTEM_IS_BIG_ENDIAN
-    swap_endian(out, totalLen);
-#endif
-
-    outputData.insert(outputData.end(), (unsigned char *)out,
-                      (unsigned char *)out + sizeof(SKP_int16) * totalLen);
-
-    /* Update buffer */
-    SKP_int16 totBytes = 0;
-    for (int i = 0; i < MAX_LBRR_DELAY; i++) {
-      totBytes += nBytesPerPacket[i + 1];
-    }
-
-    /* Check if the received totBytes is valid */
-    if (totBytes < 0 || totBytes > sizeof(payload))
-      goto failed;
-
-    SKP_memmove(payload, &payload[nBytesPerPacket[0]],
-                totBytes * sizeof(SKP_uint8));
-    payloadEnd -= nBytesPerPacket[0];
-    SKP_memmove(nBytesPerPacket, &nBytesPerPacket[1],
-                MAX_LBRR_DELAY * sizeof(SKP_int16));
-  }
-
-  free(psDec);
-
-  Py_END_ALLOW_THREADS;
-
-  return Py_BuildValue("y#", (char *)outputData.data(), outputData.size());
-
-failed:
-  if (psDec)
-    free(psDec);
-  PyErr_SetString(
-      PyErr_NewException("graiax.silkcoder.codec.error", NULL, NULL),
-      "decoder error");
-  return 0;
-}
-
-static PyObject *decode_silk(PyObject *self, PyObject *args)
-// int main( int argc, char* argv[] )
-{
+static PyObject *decode_silk(PyObject *self, PyObject *args) {
   size_t counter;
   SKP_int32 i, k;
   SKP_int16 ret, len, tot_len;
@@ -334,7 +203,7 @@ static PyObject *decode_silk(PyObject *self, PyObject *args)
   SKP_int16 nBytesPerPacket[MAX_LBRR_DELAY + 1], totBytes;
   SKP_int16 out[((FRAME_LENGTH_MS * MAX_API_FS_KHZ) << 1) * MAX_INPUT_FRAMES],
       *outPtr;
-  SKP_int32 packetSize_ms = 0, API_Fs_Hz = 0;
+  SKP_int32 API_Fs_Hz = 0;
   SKP_int32 decSizeBytes;
   void *psDec;
   SKP_float loss_prob;
@@ -344,46 +213,43 @@ static PyObject *decode_silk(PyObject *self, PyObject *args)
   /* default settings */
   loss_prob = 0.0f;
 
-  /* get arguments */
-  unsigned char *silkData;
+  /* Get input data */
+  SKP_uint8 *silkData;
   SKP_int32 silkDataSize;
   std::vector<unsigned char> outputData;
   if (!PyArg_ParseTuple(args, "y#", &silkData, &silkDataSize))
     return NULL;
 
-  unsigned char *psRead = silkData;
+  SKP_uint8 *psRead = silkData;
 
-  Py_BEGIN_ALLOW_THREADS;
+  PyThreadState *_save;
+  _save = PyEval_SaveThread();
 
   /* Check Silk header */
   if (strncmp((char *)psRead, "#!SILK_V3", 9) == 0)
     psRead += 9;
   else if (strncmp((char *)psRead, "\x02#!SILK_V3", 10) == 0)
     psRead += 10;
-  else
-    goto failed;
+  else {
+    PyEval_RestoreThread(_save);
+    PyErr_SetString(
+      PyErr_NewException("graiax.silkcoder.codec.error", NULL, NULL),
+      "Not a silkv3 file");
+    return 0;
+    }
 
   /* Set the samplingrate that is requested for the output */
-  if (API_Fs_Hz == 0) {
-    DecControl.API_sampleRate = 24000;
-  } else {
-    DecControl.API_sampleRate = API_Fs_Hz;
-  }
-
+  DecControl.API_sampleRate = 24000;
   /* Initialize to one frame per packet, for proper concealment before first
    * packet arrives */
   DecControl.framesPerPacket = 1;
 
   /* Create decoder */
   ret = SKP_Silk_SDK_Get_Decoder_Size(&decSizeBytes);
-  if (ret)
-    goto failed;
   psDec = malloc(decSizeBytes);
 
   /* Reset decoder */
   ret = SKP_Silk_SDK_InitDecoder(psDec);
-  if (ret)
-    goto failed;
 
   payloadEnd = payload;
 
@@ -392,33 +258,29 @@ static PyObject *decode_silk(PyObject *self, PyObject *args)
     /* Read payload size */
     nBytes = *(SKP_int16 *)psRead;
     psRead += sizeof(SKP_int16);
-
 #ifdef _SYSTEM_IS_BIG_ENDIAN
     swap_endian(&nBytes, 1);
 #endif
     /* Read payload */
-    memcpy(payloadEnd, (SKP_uint8 *)psRead, nBytes);
-    psRead += sizeof(SKP_uint8) * nBytes;
-
-    if ((SKP_int16)counter < nBytes)
+    
+    if (silkDataSize - (psRead - silkData) < (int)nBytes)
       break;
+    memcpy(payloadEnd, psRead, nBytes);
+    psRead += nBytes;
 
     nBytesPerPacket[i] = nBytes;
     payloadEnd += nBytes;
   }
 
   while (1) {
-    if (psRead - silkData >= silkDataSize)
-      break;
-
     /* Read payload size */
+    if (psRead - silkData >= silkDataSize) break;
     nBytes = *(SKP_int16 *)psRead;
     psRead += sizeof(SKP_int16);
 #ifdef _SYSTEM_IS_BIG_ENDIAN
     swap_endian(&nBytes, 1);
 #endif
-    if (nBytes < 0)
-      break;
+    if (nBytes < 0) break;
 
     /* Read payload */
     if (silkDataSize - (psRead - silkData) < (int)nBytes)
@@ -474,9 +336,7 @@ static PyObject *decode_silk(PyObject *self, PyObject *args)
         /* Decode 20 ms */
         ret = SKP_Silk_SDK_Decode(psDec, &DecControl, 0, payloadToDec, nBytes,
                                   outPtr, &len);
-        if (ret) {
-          printf("\nSKP_Silk_SDK_Decode returned %d", ret);
-        }
+        if (ret) goto failed;
 
         frames++;
         outPtr += len;
@@ -495,21 +355,16 @@ static PyObject *decode_silk(PyObject *self, PyObject *args)
         /* Generate 20 ms */
         ret = SKP_Silk_SDK_Decode(psDec, &DecControl, 1, payloadToDec, nBytes,
                                   outPtr, &len);
-        if (ret) {
-          printf("\nSKP_Silk_Decode returned %d", ret);
-        }
+        if (ret) goto failed;
         outPtr += len;
         tot_len += len;
       }
     }
 
-    packetSize_ms = tot_len / (DecControl.API_sampleRate / 1000);
-
     /* Write output to file */
 #ifdef _SYSTEM_IS_BIG_ENDIAN
     swap_endian(out, tot_len);
 #endif
-
     unsigned char *p = (unsigned char *)out;
     outputData.insert(outputData.end(), p, p + sizeof(SKP_int16) * tot_len);
 
@@ -567,9 +422,7 @@ static PyObject *decode_silk(PyObject *self, PyObject *args)
         /* Decode 20 ms */
         ret = SKP_Silk_SDK_Decode(psDec, &DecControl, 0, payloadToDec, nBytes,
                                   outPtr, &len);
-        if (ret) {
-          printf("\nSKP_Silk_SDK_Decode returned %d", ret);
-        }
+        if (ret) goto failed;
 
         frames++;
         outPtr += len;
@@ -589,14 +442,11 @@ static PyObject *decode_silk(PyObject *self, PyObject *args)
       for (i = 0; i < DecControl.framesPerPacket; i++) {
         ret = SKP_Silk_SDK_Decode(psDec, &DecControl, 1, payloadToDec, nBytes,
                                   outPtr, &len);
-        if (ret)
-          goto failed;
+        if (ret) goto failed;
         outPtr += len;
         tot_len += len;
       }
     }
-
-    packetSize_ms = tot_len / (DecControl.API_sampleRate / 1000);
 
     /* Write output to file */
 #ifdef _SYSTEM_IS_BIG_ENDIAN
@@ -625,15 +475,16 @@ static PyObject *decode_silk(PyObject *self, PyObject *args)
   /* Free decoder */
   free(psDec);
 
-  Py_END_ALLOW_THREADS;
+  PyEval_RestoreThread(_save);
   return Py_BuildValue("y#", outputData.data(), outputData.size());
 
 failed:
   if (psDec)
     free(psDec);
+  std::string exception = ret ? GetRaise(ret) : "UNKNOWN_ERROR";
   PyErr_SetString(
       PyErr_NewException("graiax.silkcoder.codec.error", NULL, NULL),
-      "decoder error");
+      exception.c_str());
   return 0;
 }
 
