@@ -38,8 +38,20 @@ conda install ffmpeg -c conda-forge
 ### IOS 音频问题
 
 IOS 的音频解码器因为某些**特性**，只支持解码 **25kbps 以下** 的音频。  
-所以在 0.2.6 中，我们新增了一个 `ios_adaptive` 参数（默认为 False）。
+所以在 0.2.6 中，我们新增了一个 `ios_adaptive` 参数（默认为 False）。  
 当为 True 时，将把自适应最高码率限制在 24kbps 以下（一般是限制在 100kbps 以下）
+
+### ffmpeg 转换成 `aac` 格式的问题
+
+因为 `graiax-silkcoder` **全程**采用 PIPE 的形式跟 ffmpeg 传输，  
+所以假设你想要将 silk 转码成 aac 的时候，就会出现一些问题。  
+解决方法如下
+
+``` python
+await silkcoder.async_decode("a.silk", "a.m4a", audio_format="adts")
+```
+
+注：ADTS 是 AAC 音频的传输流格式
 
 ### 自定义ffmpeg_path
 

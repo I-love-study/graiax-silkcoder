@@ -75,7 +75,7 @@ async def async_decode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
     input_bytes = input_transform(input_voice)
     pcm = await async_silk_decode(input_bytes)
 
-    if isinstance(output_voice, (os.PathLike, str)):
+    if isinstance(output_voice, (os.PathLike, str)) and audio_format is None:
         audio_format = Path(output_voice).suffix[1:]
 
     if not ensure_ffmpeg and ffmpeg_para is None and rate is None and audio_format in ['wav', None]:
@@ -146,7 +146,7 @@ def decode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
     input_bytes = input_transform(input_voice)
     pcm = silk_decode(input_bytes)
 
-    if isinstance(output_voice, (os.PathLike, str)):
+    if isinstance(output_voice, (os.PathLike, str)) and audio_format is None:
         audio_format = Path(output_voice).suffix[1:]
 
     if not ensure_ffmpeg and ffmpeg_para is None and rate is None and audio_format in ['wav', None]:
