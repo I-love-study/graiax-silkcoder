@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
+#include <iostream>
 
 /* Define codec specific settings should be moved to h file */
 #define ENCODE_MAX_BYTES_PER_FRAME 250 // Equals peak bitrate of 100 kbps

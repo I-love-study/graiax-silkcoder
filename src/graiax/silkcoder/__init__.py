@@ -45,7 +45,8 @@ async def async_encode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
                        rate: int = None,
                        ss: int = 0,
                        t: int = 0,
-                       **kwargs) -> Optional[bytes]:
+                       tencent: bool = True,
+                       ios_adaptive: bool = False) -> Optional[bytes]:
     """
     将音频文件转化为silk文件
 
@@ -70,7 +71,7 @@ async def async_encode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
     else:
         pcm = await async_ffmpeg_encode(input_bytes, audio_format, codec, ss, t,)
 
-    silk = await async_silk_encode(pcm, rate)
+    silk = await async_silk_encode(pcm, rate, tencent, ios_adaptive)
 
     return output_transform(output_voice, silk)
 
@@ -120,7 +121,9 @@ def encode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
            rate: int = None,
            ffmpeg_para: list = None,
            ss: int = 0,
-           t: int = 0) -> Optional[bytes]:
+           t: int = 0,
+           tencent: bool = True,
+           ios_adaptive: bool = False) -> Optional[bytes]:
     """
     将音频文件转化为silk文件
 
@@ -143,7 +146,7 @@ def encode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
         pcm = wav_encode(input_bytes, ss, t)
     else:
         pcm = ffmpeg_encode(input_bytes, audio_format, codec, ss, t, ffmpeg_para)
-    silk = silk_encode(pcm, rate)
+    silk = silk_encode(pcm, rate, tencent, ios_adaptive)
 
     return output_transform(output_voice, silk)
 
@@ -170,8 +173,8 @@ def decode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
     input_bytes = input_transform(input_voice)
     pcm = silk_decode(input_bytes)
 
-    if isinstance(output_voice, (os.PathLike, str)):
-        audio_format = Path(output_voice).suffix[1:].upper()
+    if isinstance(output_voice, (os.PathLike, str)) and audio_format is None:
+        audio_format = Path(output_voice).suffix[1:]
 
     if not ensure_ffmpeg and ffmpeg_para is None and rate is None and audio_format in ['wav', None]:
         audio = wav_decode(pcm)

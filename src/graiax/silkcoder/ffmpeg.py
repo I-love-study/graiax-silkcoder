@@ -65,7 +65,7 @@ async def async_ffmpeg_encode(data: bytes,
 
 def get_ffmpeg_decode_cmd(audio_format: str, codec: str, ffmpeg_para: List[str], rate: Union[int,
                                                                                              str]):
-    cmd = [ffmpeg_coder, '-f', 's16le', '-ar', '24000', '-ac', '1', '-i', 'cache:pipe:0']
+    cmd = [ffmpeg_coder, '-f', 's16le', '-ar', '24000', '-ac', '1', '-i', 'pipe:']
     if audio_format is not None: cmd += ['-f', audio_format]
     if codec: cmd += ["-acodec", codec]
     if rate is not None: cmd += ['-ab', str(rate)]
@@ -73,7 +73,7 @@ def get_ffmpeg_decode_cmd(audio_format: str, codec: str, ffmpeg_para: List[str],
     if sys.platform == 'darwin' and codec == 'mp3':
         cmd += ["-write_xing", "0"]
 
-    cmd += ['-y', '-loglevel', 'error', '-']
+    cmd += ['-y', '-loglevel', 'error', 'pipe:']
     return cmd
 
 
@@ -105,7 +105,10 @@ async def async_ffmpeg_decode(data: bytes,
     """
     cmd = get_ffmpeg_decode_cmd(audio_format, codec, ffmpeg_para, rate)
 
-    shell = await asyncio.create_subprocess_exec(*cmd)
+    shell = await asyncio.create_subprocess_exec(*cmd,
+                                                 stdin=asyncio.subprocess.PIPE,
+                                                 stdout=asyncio.subprocess.PIPE,
+                                                 stderr=asyncio.subprocess.PIPE)
     p_out, p_err = await shell.communicate(input=data)
     if shell.returncode != 0:
         raise CoderError(f"ffmpeg error:\n{p_err.decode(errors='ignore')}")
