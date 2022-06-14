@@ -3,6 +3,7 @@
 注：单个音频压制还是单线程，但是压制时不占用GIL锁
 """
 import os
+import sys
 from enum import Enum
 from io import BytesIO
 from pathlib import Path
@@ -10,9 +11,17 @@ from typing import Optional, Union
 
 from .ffmpeg import *
 from .libsndfile import *
-from .silkv3 import *
-from .utils import input_transform, iswave, output_transform, is_libsndfile_supported
+from .utils import (input_transform, is_libsndfile_supported, iswave,
+                    output_transform)
 from .wav import *
+
+try:
+    from .silkv3 import *
+except RuntimeError:
+    if sys.platform == "win32":
+        raise RuntimeError(
+            "It seems that you machine doesn't have Visual C++ runtime.\n"
+            "You can download it from https://docs.microsoft.com/zh-CN/cpp/windows/latest-supported-vc-redist")
 
 
 class Method(Enum):
