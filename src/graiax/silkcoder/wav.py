@@ -27,8 +27,7 @@ def wav_encode(data: bytes, ss: int = 0, t: int = 0):
 
 
 def wav_decode(data: bytes):
-    b = BytesIO()
-    with wave.open(b, 'wb') as wav_out:
+    with wave.open(b := BytesIO(), 'wb') as wav_out:
         wav_out.setnchannels(1)
         wav_out.setsampwidth(2)
         wav_out.setframerate(24000)

@@ -1,7 +1,9 @@
 import os
 import subprocess
+import sys
 import wave
 from io import BytesIO
+from enum import Enum
 from pathlib import Path
 from typing import Union, Optional
 
@@ -13,9 +15,45 @@ except ImportError:
 
 try:
     import soundfile
-    soundfile_supported = True
+    libsndfile_available = True
 except ImportError:
-    soundfile_supported = False
+    libsndfile_available = False
+
+class ArgTypeMixin(Enum):
+
+    @classmethod
+    def argtype(cls, s: str) -> Enum:
+        try:
+            return cls[s]
+        except KeyError:
+            raise ValueError("Not support Value")
+
+    def __str__(self):
+        return self.name
+
+class Method(ArgTypeMixin, Enum):
+    wave = 0
+    ffmpeg = 1
+    libsndfile = 2
+
+def choose_encoder(input_bytes: bytes = None):
+    if iswave(input_bytes):
+        return Method.wave
+    elif libsndfile_available and is_libsndfile_supported(input_bytes):
+        return Method.libsndfile
+    else:
+        # 什么叫做万金油啊（叉腰）
+        return Method.ffmpeg
+
+
+def choose_decoder(audio_format: str = None):
+    audio_format = audio_format.upper()
+    if audio_format == 'WAV':
+        return Method.wave
+    elif libsndfile_available and is_libsndfile_supported(audio_format):
+        return Method.libsndfile
+    else:
+        return Method.ffmpeg
 
 
 class CoderError(Exception):
@@ -57,7 +95,7 @@ def iswave(data: bytes):
 
 def issilk(data: bytes):
     """判断音频是否为silkv3格式"""
-    f = data[1:11] if data.startswith(b'\x02') else data[:9]
+    f = data[1:10] if data.startswith(b'\x02') else data[:9]
     return f == b"#!SILK_V3"
 
 
@@ -65,7 +103,7 @@ def is_libsndfile_supported(data: Union[bytes, str]):
     """判断是否被当前libsndfile所支持
     当传入 bytes 的时候，判断是否能被 libsndfile 解析
     当传入 str 的时候，判断该字符串是否在 available_formats 中"""
-    if not soundfile_supported:
+    if not libsndfile_available:
         return False
     if isinstance(data, bytes):
         try:
@@ -111,3 +149,24 @@ def get_ffmpeg():
     else:
         # 找不到，先警告一波
         Warning("Couldn't find ffmpeg, maybe it'll not work")
+
+
+def play_audio(source: Union[str, bytes]):
+    if sys.platform != "win32":
+        raise WindowsError("Only support Windows")
+
+    import winsound
+    import msvcrt
+    import multiprocessing
+    import time
+
+    p = multiprocessing.Process(
+        target=winsound.PlaySound,
+        args=(source, winsound.SND_FILENAME if isinstance(source, str) else winsound.SND_MEMORY),
+    )
+    p.start()
+    print("请按'q'中断")
+    while p.is_alive:
+        if msvcrt.kbhit() and msvcrt.getch() in b"qQ": break
+        time.sleep(0.1)
+    p.terminate()

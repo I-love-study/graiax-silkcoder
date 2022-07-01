@@ -8,22 +8,25 @@ authors = [
 ]
 dependencies = []
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">=3.8"
 license = {text = "BSD-3-Clause"}
 
 [project.optional-dependencies]
-libsndfile = ["soundfile", "soxr"]
+# python-soxr 在 0.3.0a2 后才支持 nogil
+libsndfile = ["soundfile", "soxr>=0.3.0a2"]
 ffmpeg = ["imageio-ffmpeg"]
 
 [project.urls]
 repository = "https://github.com/I-love-study/graiax-silkcoder"
 
-[tool]
 [tool.pdm]
-build = "build.py"
 package-dir = "src"
 includes = ["src/graiax"]  
 source-includes = ["src/c_silkv3"]
+
+[tool.pdm.build]
+setup-script = "build.py"
+run-setuptools = true
 
 [tool.cibuildwheel]
 # 没测过PyPy，先不build了

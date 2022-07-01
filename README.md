@@ -17,7 +17,7 @@ pip install graiax-silkcoder[ffmpeg]
 pip install graiax-silkcoder[libsndfile]
 ```
 
-注: 假设你是Windows用户，安装时出现了`error: Microsoft Visual C++ 14.0 is required:`
+注: 假设你是Windows用户，安装时出现了`error: Microsoft Visual C++ 14.0 is required:`  
 请安装[Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 
 ### 从 conda-forge
@@ -77,12 +77,12 @@ python -m graiax.silkcoder decode -i "a.silk" "a.wav"
 
 ## 是 `ffmpeg` 还是 `libsndfile`
 
-在该项目最开始的时候，就有人吐槽过：为了简简单单的音频转换去下载一个大的离谱的 ffmpeg，这也太麻了吧。（注：虽然说 ffmpeg 可以通过 disable 一大堆不必要视频处理库来达到减小体积的目的，但是这需要自己编译，对小白挺不友好的）
+在该项目最开始的时候，就有人吐槽过：为了简简单单的音频转换去下载一个大的离谱的 ffmpeg，这也太麻了吧。（注：虽然说 ffmpeg 可以通过 disable 一大堆不必要视频/滤镜库来达到减小体积的目的，但是这需要自己编译，对小白挺不友好的）
 
 所以，从 0.3.0 开始，开始增加了通过 libsndfile 来使用解析音频。
 
 > libsndfile 是一款广泛用于读写音频文件的C语言库，
-他支持包括 flac, ogg, opus, mp3<sup>[1](##注)</sup>等多种格式。
+他支持包括 flac, ogg, opus, mp3<sup>[[1]](#注)</sup>等多种格式。
 
 因为
 
@@ -93,6 +93,7 @@ python -m graiax.silkcoder decode -i "a.silk" "a.wav"
 ```python
 from pathlib import Path
 from graiax import silkcoder
+from graiax.silkcoder import Method
 
 # silk编码
 # 你可以文件→文件
@@ -102,10 +103,9 @@ silk: bytes = silkcoder.encode('a.wav')
 # 你可以二进制数据→二进制数据
 silk: bytes = silkcoder.encode(Path('a.wav').read_bytes())
 # 你可以二进制数据→文件
-silkcoder.encode(Path('a.wav').read_bytes(), 'a.silk', audio_format='wav')
+silkcoder.encode(Path('a.wav').read_bytes(), 'a.silk')
 # 你可以指定让ffmpeg解码音频，也可以让程序自己选择
-# 注:只有当音频是wav且ensure_ffmpeg=None时才会不使用ffmpeg处理
-silkcoder.encode('a.wav', 'a.silk', ensure_ffmpeg=True)
+silkcoder.encode('a.wav', 'a.silk', Method.ffmpeg)
 # 你也可以设置码率(默认状态下将会将尝试将目标语音大小限制在980kb上下)
 silkcoder.encode('a.wav', 'a.silk', rate=70000)
 # 你甚至可以剪辑音频
@@ -121,10 +121,9 @@ mp3: bytes = silkcoder.decode(Path('a.silk').read_bytes(), audio_format='mp3')
 # 你可以二进制数据→文件
 silkcoder.decode(Path('a.silk').read_bytes(), 'a.wav')
 # 你可以指定让ffmpeg解码音频，也可以让程序自己选择
-# 注:只有当音频是wav且ensure_ffmpeg=None时才会不使用ffmpeg处理
-silkcoder.decode('a.silk', 'a.wav', ensure_ffmpeg=True)
+silkcoder.decode('a.silk', 'a.wav', Method.ffmpeg)
 # 你也可以直接传入ffmpeg参数来输出
-silkcoder.decode('a.silk', 'a.mp3', ffmpeg_para=['-ab', '320k'])
+silkcoder.decode('a.silk', 'a.mp3', Method.ffmpeg, ffmpeg_para=['-ab', '320k'])
 ```
 
 ### 异步情况下

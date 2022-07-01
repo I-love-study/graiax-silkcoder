@@ -5,6 +5,8 @@ from typing import List, Union
 
 from .utils import CoderError, get_ffmpeg, soxr_available
 
+Num = Union[int, float]
+
 ffmpeg_coder = get_ffmpeg()
 if ffmpeg_coder is not None:
     soxr = soxr_available(ffmpeg_coder)
@@ -15,14 +17,18 @@ else:
     ffmpeg_available = False
 
 
-def get_ffmpeg_encode_cmd(audio_format: str, codec: str, ss: int, t: int, ffmpeg_para: List[str]):
+def get_ffmpeg_encode_cmd(audio_format: str, codec: str, ss: Num, t: Num, ffmpeg_para: List[str]):
     cmd = [ffmpeg_coder]
     if audio_format is not None: cmd += ['-f', audio_format]
     if codec: cmd += ["-acodec", codec]
 
     input_cmd = ["-read_ahead_limit", "-1", "-i", "cache:pipe:0"]
 
-    cmd += ['-ss', str(ss), *input_cmd, '-t', str(t)] if t else input_cmd
+    cmd += [
+        '-ss',
+        str(ss if isinstance(ss, int) else round(ss, 3)), *input_cmd, '-t',
+        str(t if isinstance(t, int) else round(t, 3))
+    ] if t else input_cmd
     if ffmpeg_para: cmd += ffmpeg_para
     if soxr: cmd += ['-af', 'aresample=resampler=soxr']
     cmd += ['-ar', '24000', '-ac', '1', '-y', '-vn', '-loglevel', 'error', '-f', 's16le', '-']
@@ -32,8 +38,8 @@ def get_ffmpeg_encode_cmd(audio_format: str, codec: str, ss: int, t: int, ffmpeg
 def ffmpeg_encode(data: bytes,
                   audio_format: str = None,
                   codec: str = None,
-                  ss: int = None,
-                  t: int = None,
+                  ss: Num = None,
+                  t: Num = None,
                   ffmpeg_para: List[str] = None):
     cmd = get_ffmpeg_encode_cmd(audio_format, codec, ss, t, ffmpeg_para)
     shell = subprocess.Popen(cmd,
@@ -49,8 +55,8 @@ def ffmpeg_encode(data: bytes,
 async def async_ffmpeg_encode(data: bytes,
                               audio_format: str = None,
                               codec: str = None,
-                              ss: int = None,
-                              t: int = None,
+                              ss: Num = None,
+                              t: Num = None,
                               ffmpeg_para: List[str] = None):
     cmd = get_ffmpeg_encode_cmd(audio_format, codec, ss, t, ffmpeg_para)
     shell = await asyncio.create_subprocess_exec(*cmd,
@@ -68,7 +74,7 @@ def get_ffmpeg_decode_cmd(audio_format: str, codec: str, ffmpeg_para: List[str],
     cmd = [ffmpeg_coder, '-f', 's16le', '-ar', '24000', '-ac', '1', '-i', 'pipe:']
     if audio_format is not None: cmd += ['-f', audio_format]
     if codec: cmd += ["-acodec", codec]
-    if rate is not None: cmd += ['-ab', str(rate)]
+    if rate is not None: cmd += ['-b:a', str(rate)]
     if ffmpeg_para is not None: cmd += [str(a) for a in ffmpeg_para]
     if sys.platform == 'darwin' and codec == 'mp3':
         cmd += ["-write_xing", "0"]
