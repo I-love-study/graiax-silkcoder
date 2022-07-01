@@ -10,7 +10,7 @@ from typing import Dict, Optional, Union
 
 from .ffmpeg import *
 from .libsndfile import *
-from .utils import (Method, input_transform, is_libsndfile_supported, iswave, output_transform,
+from .utils import (Method, input_transform, output_transform,
                     choose_decoder, choose_encoder)
 from .wav import *
 
