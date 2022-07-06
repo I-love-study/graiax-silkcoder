@@ -26,8 +26,7 @@ decode_parser.add_argument('output', help="输出文件名")
 decode_parser.set_defaults(func=decode)
 
 player_parser = subparsers.add_parser("play", help="播放")
-player_parser.add_argument('-i', help="输入文件", required=True)
-player_parser.add_argument('--audio-format', help="音频格式，默认为None")
+player_parser.add_argument('input', help="输入文件", required=True)
 player_parser.set_defaults(func=play_audio)
 
 
@@ -40,9 +39,9 @@ if __name__ == "__main__":
         dict_args["output_voice"] = dict_args.pop("output")
         func(**dict_args)
     else:
-        b = Path(dict_args["i"]).read_bytes()
+        b = Path(dict_args["input"]).read_bytes()
         if issilk(b):
-            b = decode(b)
+            b = decode(b, codec=Method.wave)
         elif iswave(b):
             ...
         
