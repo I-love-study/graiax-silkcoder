@@ -12,6 +12,9 @@ except ImportError:
 
 Num = Union[int, float]
 
+VBR_ENCODING_QUALITY = 0x1300
+COMPRESSION_LEVEL = 0x1301
+
 
 def sndfile_encode(data: bytes, audio_format: str = None, ss: Num = 0, t: Num = -1):
     with soundfile.SoundFile(BytesIO(data), 'r', format=audio_format) as f:
@@ -27,7 +30,10 @@ def sndfile_encode(data: bytes, audio_format: str = None, ss: Num = 0, t: Num = 
     return b.getvalue()
 
 
-def sndfile_decode(data: bytes, audio_format: str = None, quality: float = None, metadata: dict = None):
+def sndfile_decode(data: bytes,
+                   audio_format: str = None,
+                   quality: float = None,
+                   metadata: dict = None):
     if quality is not None and 0 <= quality <= 1:
         raise ValueError("vbr should between 0 and 1")
     pcm, samplerate = soundfile.read(BytesIO(data),
@@ -45,11 +51,10 @@ def sndfile_decode(data: bytes, audio_format: str = None, quality: float = None,
         if quality is not None:
             q = soundfile._ffi.new("double*", quality)
             if audio_format == "flac":
-                ret = soundfile._snd.sf_command(f._file, soundfile._snd.SFC_SET_COMPRESSION_LEVEL,
-                                                q, soundfile._ffi.sizeof(q))
+                ret = soundfile._snd.sf_command(f._file, COMPRESSION_LEVEL, q,
+                                                soundfile._ffi.sizeof(q))
             else:
-                ret = soundfile._snd.sf_command(f._file,
-                                                soundfile._snd.SFC_SET_VBR_ENCODING_QUALITY, q,
+                ret = soundfile._snd.sf_command(f._file, VBR_ENCODING_QUALITY, q,
                                                 soundfile._ffi.sizeof(q))
             if ret == soundfile._snd.SF_FALSE:
                 err = soundfile._snd.sf_error(f._file)
@@ -59,14 +64,16 @@ def sndfile_decode(data: bytes, audio_format: str = None, quality: float = None,
 
 
 async def async_sndfile_encode(data: bytes, audio_format: str = None, ss: Num = 0, t: Num = 0):
-    await asyncio.to_thread(sndfile_encode, data, audio_format, ss, t)
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, sndfile_encode, data, audio_format, ss, t)
 
 
 async def async_sndfile_decode(data: bytes,
                                audio_format: str = None,
                                quality: float = None,
                                metadata: dict = None):
-    await asyncio.to_thread(sndfile_decode, data, audio_format, quality, metadata)
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, sndfile_decode, data, audio_format, quality, metadata)
 
 
 __all__ = [

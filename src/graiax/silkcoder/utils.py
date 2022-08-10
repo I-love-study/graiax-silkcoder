@@ -15,6 +15,7 @@ except ImportError:
 
 try:
     import soundfile
+    import soxr
     libsndfile_available = True
 except ImportError:
     libsndfile_available = False
