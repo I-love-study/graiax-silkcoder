@@ -1,7 +1,7 @@
 from typing import Dict, Union, Optional, Literal, List, overload
 from io import BytesIO
 from os import PathLike
-from .utils import Method
+from .utils import Codec
 from numbers import Real
 
 filelike = Union[PathLike, str, BytesIO]
@@ -12,7 +12,7 @@ Num = Union[int, float]
 async def async_encode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Literal[Method.wave] = None,
+                       codec: Literal[Codec.wave] = None,
                        rate: int = None,
                        ss: Num = 0,
                        t: Num = 0,
@@ -25,7 +25,7 @@ async def async_encode(input_voice: Union[filelike, bytes],
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件
         output_voice(os.PathLike, str, BytesIO, None) 输出文件(silk)，默认为None，为None时将返回bytes
 
-        codec(Method.wave) 编码器，这里是 python 的 wave 标准库
+        codec(Codec.wave) 编码器，这里是 python 的 wave 标准库
         rate(int) silk码率 默认为None 此时编码器将会尝试将码率限制在980kb (若时常在10min内，将严守1Mb线)
         ss(Num) 开始读取时间,对应 ffmpeg 中的ss (只能精确到秒) 默认为0(如t为0则忽略)
         t(Num) 持续读取时间,对应 ffmpeg 中的 t (只能精确到秒) 默认为0(不剪切)
@@ -39,7 +39,7 @@ async def async_encode(input_voice: Union[filelike, bytes],
 async def async_encode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Literal[Method.libsndfile] = None,
+                       codec: Literal[Codec.libsndfile] = None,
                        audio_format: str = None,
                        rate: int = None,
                        ss: Num = 0,
@@ -53,7 +53,7 @@ async def async_encode(input_voice: Union[filelike, bytes],
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件
         output_voice(os.PathLike, str, BytesIO, None) 输出文件(silk)，默认为None，为None时将返回bytes
 
-        codec(Method.libsndfile) 编码器，这里是 libsndfile
+        codec(Codec.libsndfile) 编码器，这里是 libsndfile
         audio_format(str) 音频格式(如mp3, ogg) 默认为None(此时将由 libsndfile 解析格式)
         rate(int) silk码率 默认为None 此时编码器将会尝试将码率限制在980kb (若时常在10min内，将严守1Mb线)
         ss(Num) 开始读取时间,对应 ffmpeg 中的ss (只能精确到秒) 默认为0(如t为0则忽略)
@@ -68,7 +68,7 @@ async def async_encode(input_voice: Union[filelike, bytes],
 async def async_encode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Literal[Method.ffmpeg] = None,
+                       codec: Literal[Codec.ffmpeg] = None,
                        audio_format: str = None,
                        rate: int = None,
                        ss: Num = 0,
@@ -83,7 +83,7 @@ async def async_encode(input_voice: Union[filelike, bytes],
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件
         output_voice(os.PathLike, str, BytesIO, None) 输出文件(silk)，默认为None，为None时将返回bytes
 
-        codec(Method.ffmpeg) 编码器，这里是 ffmpeg
+        codec(Codec.ffmpeg) 编码器，这里是 ffmpeg
         audio_format(str) 音频格式(如mp3, ogg) 默认为None(此时将由 ffmpeg 解析格式)
         rate(int) silk码率 默认为None 此时编码器将会尝试将码率限制在980kb (若时常在10min内，将严守1Mb线)
         ss(Num) 开始读取时间,对应 ffmpeg 中的ss (只能精确到秒) 默认为0(如t为0则忽略)
@@ -99,14 +99,14 @@ async def async_encode(input_voice: Union[filelike, bytes],
 async def async_decode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Literal[Method.wave] = None) -> Optional[bytes]:
+                       codec: Literal[Codec.wave] = None) -> Optional[bytes]:
     """
     将silkv3音频转换为其他音频格式
 
     Args:
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件(silk)
         output_voice(os.PathLike, str, BytesIO, None) 输出文件，默认为None，为None时将返回bytes
-        codec(Method.wave) 编码器，这里是 python 的 wave 标准库
+        codec(Codec.wave) 编码器，这里是 python 的 wave 标准库
     """
     ...
 
@@ -115,7 +115,7 @@ async def async_decode(input_voice: Union[filelike, bytes],
 async def async_decode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Literal[Method.libsndfile] = None,
+                       codec: Literal[Codec.libsndfile] = None,
                        audio_format: str = None,
                        quality: float = None,
                        metadata: Dict[str, str] = None) -> Optional[bytes]:
@@ -126,7 +126,7 @@ async def async_decode(input_voice: Union[filelike, bytes],
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件(silk)
         output_voice(os.PathLike, str, BytesIO, None) 输出文件，默认为None，为None时将返回bytes
 
-        codec(Method.libsndfile) 编码器，这里是 libsndfile
+        codec(Codec.libsndfile) 编码器，这里是 libsndfile
         audio_format(str) 音频格式(如mp3, ogg) 默认为None（此时将由 libsndfile 解析格式）
         quality(float) 压缩品质，要求在0到1之间
         metadata(dict) 音频标签 默认为 None
@@ -138,7 +138,7 @@ async def async_decode(input_voice: Union[filelike, bytes],
 async def async_decode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Literal[Method.ffmpeg] = None,
+                       codec: Literal[Codec.ffmpeg] = None,
                        audio_format: str = None,
                        rate: int = None,
                        metadata: Dict[str, str] = None,
@@ -150,7 +150,7 @@ async def async_decode(input_voice: Union[filelike, bytes],
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件(silk)
         output_voice(os.PathLike, str, BytesIO, None) 输出文件，默认为None，为None时将返回bytes
 
-        codec(Method.ffmpeg) 编码器，这里是 ffmpeg
+        codec(Codec.ffmpeg) 编码器，这里是 ffmpeg
         audio_format(str) 音频格式(如mp3, ogg) 默认为None(此时将由 ffmpeg 解析格式)
         rate(int) 码率 对应ffmpeg/avconc中"-ab"参数 默认为None
         metadata(dict) 音频标签 将会转化为ffmpeg/avconc参数 如"-metadata title=xxx" 默认为None
@@ -163,7 +163,7 @@ async def async_decode(input_voice: Union[filelike, bytes],
 def encode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
            /,
-           codec: Literal[Method.wave] = None,
+           codec: Literal[Codec.wave] = None,
            rate: int = None,
            ss: Num = 0,
            t: Num = 0,
@@ -176,7 +176,7 @@ def encode(input_voice: Union[filelike, bytes],
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件
         output_voice(os.PathLike, str, BytesIO, None) 输出文件(silk)，默认为None，为None时将返回bytes
         
-        codec(Method.wave) 编码器，这里是 python 的 wave 标准库
+        codec(Codec.wave) 编码器，这里是 python 的 wave 标准库
         rate(int) silk码率 默认为None 此时编码器将会尝试将码率限制在980kb (若时常在10min内，将严守1Mb线)
         ss(Num) 开始读取时间,对应 ffmpeg 中的ss (只能精确到秒) 默认为0(如t为0则忽略)
         t(Num) 持续读取时间,对应 ffmpeg 中的 t (只能精确到秒) 默认为0(不剪切)
@@ -189,7 +189,7 @@ def encode(input_voice: Union[filelike, bytes],
 @overload
 def encode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
-           codec: Literal[Method.libsndfile] = None,
+           codec: Literal[Codec.libsndfile] = None,
            /,
            audio_format: str = None,
            rate: int = None,
@@ -203,7 +203,7 @@ def encode(input_voice: Union[filelike, bytes],
     Args:
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件
         output_voice(os.PathLike, str, BytesIO, None) 输出文件(silk)，默认为None，为None时将返回bytes
-        codec(Method.libsndfile) 编码器，这里是 libsndfile
+        codec(Codec.libsndfile) 编码器，这里是 libsndfile
 
         audio_format(str) 音频格式(如mp3, ogg) 默认为None(此时将由 libsndfile 解析格式)
         rate(int) silk码率 默认为None 此时编码器将会尝试将码率限制在980kb (若时常在10min内，将严守1Mb线)
@@ -219,7 +219,7 @@ def encode(input_voice: Union[filelike, bytes],
 def encode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
            /,
-           codec: Literal[Method.ffmpeg] = None,
+           codec: Literal[Codec.ffmpeg] = None,
            audio_format: str = None,
            rate: int = None,
            ss: Num = 0,
@@ -234,7 +234,7 @@ def encode(input_voice: Union[filelike, bytes],
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件
         output_voice(os.PathLike, str, BytesIO, None) 输出文件(silk)，默认为None，为None时将返回bytes
 
-        codec(Method.ffmpeg) 编码器，这里是 ffmpeg
+        codec(Codec.ffmpeg) 编码器，这里是 ffmpeg
         audio_format(str) 音频格式(如mp3, ogg) 默认为None(此时将由 ffmpeg 解析格式)
         rate(int) silk码率 默认为None 此时编码器将会尝试将码率限制在980kb (若时常在10min内，将严守1Mb线)
         ss(Num) 开始读取时间,对应 ffmpeg 中的ss (只能精确到秒) 默认为0(如t为0则忽略)
@@ -250,14 +250,14 @@ def encode(input_voice: Union[filelike, bytes],
 def decode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
            /,
-           codec: Literal[Method.wave] = None) -> Optional[bytes]:
+           codec: Literal[Codec.wave] = None) -> Optional[bytes]:
     """
     将silkv3音频转换为其他音频格式
 
     Args:
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件(silk)
         output_voice(os.PathLike, str, BytesIO, None) 输出文件，默认为None，为None时将返回bytes
-        codec(Method.wave) 编码器，这里是 python 的 wave 标准库
+        codec(Codec.wave) 编码器，这里是 python 的 wave 标准库
     """
     ...
 
@@ -266,7 +266,7 @@ def decode(input_voice: Union[filelike, bytes],
 def decode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
            /,
-           codec: Literal[Method.libsndfile] = None,
+           codec: Literal[Codec.libsndfile] = None,
            audio_format: str = None,
            quality: float = None,
            metadata: Dict[str, str] = None) -> Optional[bytes]:
@@ -277,7 +277,7 @@ def decode(input_voice: Union[filelike, bytes],
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件(silk)
         output_voice(os.PathLike, str, BytesIO, None) 输出文件，默认为None，为None时将返回bytes
 
-        codec(Method.libsndfile) 编码器，这里是 libsndfile
+        codec(Codec.libsndfile) 编码器，这里是 libsndfile
         audio_format(str) 音频格式(如mp3, ogg) 默认为None（此时将由 libsndfile 解析格式）
         quality(float) 压缩品质，要求在0到1之间
         metadata(dict) 音频标签 默认为 None
@@ -289,7 +289,7 @@ def decode(input_voice: Union[filelike, bytes],
 def decode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
            /,
-           codec: Literal[Method.ffmpeg] = None,
+           codec: Literal[Codec.ffmpeg] = None,
            audio_format: str = None,
            rate: int = None,
            metadata: Dict[str, str] = None,
@@ -301,7 +301,7 @@ def decode(input_voice: Union[filelike, bytes],
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件(silk)
         output_voice(os.PathLike, str, BytesIO, None) 输出文件，默认为None，为None时将返回bytes
 
-        codec(Method.ffmpeg) 编码器，这里是 ffmpeg
+        codec(Codec.ffmpeg) 编码器，这里是 ffmpeg
         audio_format(str) 音频格式(如mp3, ogg) 默认为None(此时将由 ffmpeg 解析格式)
         rate(int) 码率 对应ffmpeg/avconc中"-ab"参数 默认为None
         metadata(dict) 音频标签 将会转化为ffmpeg/avconc参数 如"-metadata title=xxx" 默认为None

@@ -136,10 +136,10 @@ silkcoder.encode("a.wav", "a.silk", ss=10, t=5)
 
 ```python
 from graiax import silkcoder
-from graiax.silkcoder import Method
+from graiax.silkcoder import Codec
 
-silkcoder.encode("a.mp3", "a.silk", codec = Method.libsndfile)
-silkcoder.encode("a.mp3", "a.silk", codec = Method.ffmpeg)
+silkcoder.encode("a.mp3", "a.silk", codec = Codec.libsndfile)
+silkcoder.encode("a.mp3", "a.silk", codec = Codec.ffmpeg)
 ```
 
 在 ffmpeg 模式下，你甚至可以直接传入 ffmpeg 参数
@@ -148,7 +148,7 @@ silkcoder.encode("a.mp3", "a.silk", codec = Method.ffmpeg)
 from graiax import silkcoder
 
 # 虽然 -vn 是可有可无，但我想不出其他例子了
-silkcoder.encode("a.mp4", "a.silk", codec = Method.ffmpeg,
+silkcoder.encode("a.mp4", "a.silk", codec = Codec.ffmpeg,
                  ffmpeg_para = ["-vn"])
 ```
 
@@ -169,14 +169,14 @@ silkcoder.encode("a.wav", "a.silk", rate = 70000)
 
 ```python
 from graiax import silkcoder
-from graiax.silkcoder import Method
+from graiax.silkcoder import Codec
 
 metadata = {"title": "xx群",
             "artist": "xx网友"}
 
 # Tips： 如果你硬是选了 wave，他会忽略 metadata 参数而不是报错
 silkcoder.decode("a.silk", "a.flac", 
-                 codec = Method.libsndfile,
+                 codec = Codec.libsndfile,
                  metadata = metadata)
 
 ```
@@ -186,15 +186,15 @@ silkcoder.decode("a.silk", "a.flac",
 
 ```python
 from graiax import silkcoder
-from graiax.silkcoder import Method
+from graiax.silkcoder import Codec
 
 #ffmpeg 转换成 128kbps 的 mp3
 silkcoder.decode("a.silk", "a.mp3", 
-                 codec = Method.ffmpeg,
+                 codec = Codec.ffmpeg,
                  rate = 128000)
 #libsndfile 转换为 压缩率最大 的 flac （注，quality 参数只能在 0~ 1 ）
 silkcoder.decode("a.silk", "a.flac", 
-                 codec = Method.libsndfile,
+                 codec = Codec.libsndfile,
                  quality = 1)
 
 ```

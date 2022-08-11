@@ -32,29 +32,29 @@ class ArgTypeMixin(Enum):
     def __str__(self):
         return self.name
 
-class Method(ArgTypeMixin, Enum):
+class Codec(ArgTypeMixin, Enum):
     wave = 0
     ffmpeg = 1
     libsndfile = 2
 
 def choose_encoder(input_bytes: bytes = None):
     if iswave(input_bytes):
-        return Method.wave
+        return Codec.wave
     elif libsndfile_available and is_libsndfile_supported(input_bytes):
-        return Method.libsndfile
+        return Codec.libsndfile
     else:
         # 什么叫做万金油啊（叉腰）
-        return Method.ffmpeg
+        return Codec.ffmpeg
 
 
 def choose_decoder(audio_format: str = None):
     audio_format = audio_format.upper()
     if audio_format == 'WAV':
-        return Method.wave
+        return Codec.wave
     elif libsndfile_available and is_libsndfile_supported(audio_format):
-        return Method.libsndfile
+        return Codec.libsndfile
     else:
-        return Method.ffmpeg
+        return Codec.ffmpeg
 
 
 class CoderError(Exception):
@@ -167,7 +167,8 @@ def play_audio(source: Union[str, bytes]):
     )
     p.start()
     print("请按'q'中断")
-    while p.is_alive:
+    while p.is_alive():
         if msvcrt.kbhit() and msvcrt.getch() in b"qQ": break
         time.sleep(0.1)
     p.terminate()
+    p.join()

@@ -22,16 +22,17 @@ def sndfile_encode(data: bytes, audio_format: str = None, ss: Num = 0, t: Num = 
         pcm = f.read(
             f._prepare_read(int(ss * samplerate), None,
                             int(t * samplerate) if t > 0 else -1))
+    if len(pcm.shape) > 1 and pcm.shape[1] > 1:
+        pcm = pcm.mean(axis=1)
     if samplerate != 24000:
         pcm = soxr.resample(pcm, samplerate, 24000)
-    if pcm.shape[1] > 1:
-        pcm = pcm.mean(axis=1)
     soundfile.write(b := BytesIO(), pcm, 24000, "PCM_16", format="RAW")
     return b.getvalue()
 
 
 def sndfile_decode(data: bytes,
                    audio_format: str = None,
+                   subtype: str = None,
                    quality: float = None,
                    metadata: dict = None):
     if quality is not None and 0 <= quality <= 1:
@@ -45,7 +46,8 @@ def sndfile_decode(data: bytes,
                              'w',
                              samplerate=samplerate,
                              channels=1,
-                             format=audio_format) as f:
+                             format=audio_format,
+                             subtype=subtype) as f:
         for k, v in metadata.items():
             f[k] = v
         if quality is not None:
@@ -64,16 +66,17 @@ def sndfile_decode(data: bytes,
 
 
 async def async_sndfile_encode(data: bytes, audio_format: str = None, ss: Num = 0, t: Num = 0):
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, sndfile_encode, data, audio_format, ss, t)
+    return await asyncio.get_running_loop().run_in_executor(
+        None, sndfile_encode, data, audio_format, ss, t)
 
 
 async def async_sndfile_decode(data: bytes,
                                audio_format: str = None,
+                               subtype: str = None,
                                quality: float = None,
                                metadata: dict = None):
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, sndfile_decode, data, audio_format, quality, metadata)
+    return await asyncio.get_running_loop().run_in_executor(
+        None, sndfile_decode, data, audio_format, subtype, quality, metadata)
 
 
 __all__ = [

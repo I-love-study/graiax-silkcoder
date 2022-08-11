@@ -10,7 +10,7 @@ from typing import Dict, Optional, Union
 
 from .ffmpeg import *
 from .libsndfile import *
-from .utils import (Method, input_transform, output_transform,
+from .utils import (Codec, input_transform, output_transform,
                     choose_decoder, choose_encoder)
 from .wav import *
 
@@ -29,7 +29,7 @@ Num = Union[int, float]
 async def async_encode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Method = None,
+                       codec: Codec = None,
                        rate: int = None,
                        ss: Num = 0,
                        t: Num = 0,
@@ -42,9 +42,9 @@ async def async_encode(input_voice: Union[filelike, bytes],
     Args:
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件
         output_voice(os.PathLike, str, BytesIO, None) 输出文件(silk)，默认为None，为None时将返回bytes
-        codec(Method) 编码器，可选 wave, libsndfile, ffmpeg 默认状态下会让程序自行判断
+        codec(Codec) 编码器，可选 wave, libsndfile, ffmpeg 默认状态下会让程序自行判断
 
-        audio_format(str) 音频格式(如mp3, ogg) 默认为None(此时将由 ffmpeg 解析格式)
+        audio_format(str) 音频格式(如mp3, ogg) 默认为None(此时将由所选处理器解析格式)
         rate(int) silk码率 默认为None 此时编码器将会尝试将码率限制在980kb (若时常在10min内，将严守1Mb线)
         ss(Num) 开始读取时间,对应 ffmpeg 中的ss (只能精确到秒) 默认为0(如t为0则忽略)
         t(Num) 持续读取时间,对应 ffmpeg 中的 t (只能精确到秒) 默认为0(不剪切)
@@ -56,9 +56,9 @@ async def async_encode(input_voice: Union[filelike, bytes],
     if codec is None:
         codec = choose_encoder(input_bytes)
 
-    if codec == Method.wave:
+    if codec == Codec.wave:
         pcm = wav_encode(input_bytes, ss, t)
-    elif codec == Method.libsndfile:
+    elif codec == Codec.libsndfile:
         audio_format = kwargs.get("audio_format", None)
         pcm = await async_sndfile_encode(input_bytes, audio_format, ss, t)
     else:
@@ -74,7 +74,7 @@ async def async_encode(input_voice: Union[filelike, bytes],
 async def async_decode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Method = None,
+                       codec: Codec = None,
                        audio_format: str = None,
                        **kwargs) -> Optional[bytes]:
     """
@@ -83,7 +83,7 @@ async def async_decode(input_voice: Union[filelike, bytes],
     Args:
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件(silk)
         output_voice(os.PathLike, str, BytesIO, None) 输出文件，默认为None，为None时将返回bytes
-        codec(Method) 编码器，可选 wave, libsndfile, ffmpeg 默认状态下会让程序自行判断
+        codec(Codec) 编码器，可选 wave, libsndfile, ffmpeg 默认状态下会让程序自行判断
 
         audio_format(str) 音频格式(如mp3, ogg) 默认为None(此时将由ffmpeg解析格式)
         rate(int) 码率 对应ffmpeg/avconc中"-ab"参数 默认为None
@@ -91,22 +91,27 @@ async def async_decode(input_voice: Union[filelike, bytes],
         ffmpeg_para(list) 额外的 ffmpeg 参数(假设是 ffmpeg 的话)（如 ['-ar', '24000']）
     """
     input_bytes = input_transform(input_voice)
-    pcm = await async_silk_decode(input_bytes)
 
     if codec is None:
         codec = choose_decoder(input_bytes)
     if audio_format is None:
-        raise ValueError("Pls tell me what audio format to use")
+        if isinstance(output_voice, (os.PathLike, str)):
+            audio_format = Path(output_voice).suffix[1:]
+        else:
+            raise ValueError("Pls tell me what audio format to use")
 
-    if codec == Method.wave:
+    pcm = await async_silk_decode(input_bytes)
+
+    if codec == Codec.wave:
         audio = wav_decode(pcm)
-    elif codec == Method.libsndfile:
+    elif codec == Codec.libsndfile:
         metadata = kwargs.pop("metadata", None)
         quality = kwargs.pop("quality", None)
-        audio = await async_sndfile_decode(pcm, audio_format, quality, metadata)
-    elif codec == Method.ffmpeg:
-        metadata = kwargs.pop("metadata", None)
+        subtype = kwargs.pop("subtype", None)
+        audio = await async_sndfile_decode(pcm, audio_format, subtype, quality, metadata)
+    elif codec == Codec.ffmpeg:
         rate = kwargs.pop("rate", None)
+        metadata = kwargs.pop("metadata", None)
         ffmpeg_para = kwargs.pop("ffmpeg_para", None)
         audio = await async_ffmpeg_decode(pcm, audio_format, rate, metadata, ffmpeg_para)
 
@@ -116,7 +121,7 @@ async def async_decode(input_voice: Union[filelike, bytes],
 def encode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
            /,
-           codec: Method = None,
+           codec: Codec = None,
            audio_format: str = None,
            rate: int = None,
            ss: int = 0,
@@ -130,7 +135,7 @@ def encode(input_voice: Union[filelike, bytes],
     Args:
         input_voice(os.PathLike, str, BytesIO, bytes) 输入文件
         output_voice(os.PathLike, str, BytesIO, None) 输出文件(silk)，默认为None，为None时将返回bytes
-        codec(Method) 编码器，可选 wave, libsndfile, ffmpeg 默认状态下会让程序自行判断
+        codec(Codec) 编码器，可选 wave, libsndfile, ffmpeg 默认状态下会让程序自行判断
 
         audio_format(str) 音频格式(如mp3, ogg) 默认为None(此时将由 ffmpeg 解析格式)
         rate(int) silk码率 默认为None 此时编码器将会尝试将码率限制在980kb (若时常在10min内，将严守1Mb线)
@@ -146,9 +151,9 @@ def encode(input_voice: Union[filelike, bytes],
     if codec is None:
         codec = choose_encoder(input_bytes)
 
-    if codec == Method.wave:
+    if codec == Codec.wave:
         pcm = wav_encode(input_bytes, ss, t)
-    elif codec == Method.libsndfile:
+    elif codec == Codec.libsndfile:
         audio_format = kwargs.get("audio_format", None)
         pcm = sndfile_encode(input_bytes, audio_format, ss, t)
     else:
@@ -183,18 +188,22 @@ def decode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
 
     if codec is None:
         codec = choose_decoder(input_bytes)
-    if audio_format is None and codec != Method.wave:
-        raise ValueError("Pls tell me what audio format to use")
+    if audio_format is None:
+        if isinstance(output_voice, (os.PathLike, str)):
+            audio_format = Path(output_voice).suffix[1:]
+        else:
+            raise ValueError("Pls tell me what audio format to use")
 
-    if codec == Method.wave:
+    if codec == Codec.wave:
         audio = wav_decode(pcm)
-    elif codec == Method.libsndfile:
+    elif codec == Codec.libsndfile:
         metadata = kwargs.pop("metadata", None)
         quality = kwargs.pop("quality", None)
-        audio = sndfile_decode(pcm, audio_format, quality, metadata)
-    elif codec == Method.ffmpeg:
-        metadata = kwargs.pop("metadata", None)
+        subtype = kwargs.pop("subtype", None)
+        audio = sndfile_decode(pcm, audio_format, subtype, quality, metadata)
+    elif codec == Codec.ffmpeg:
         rate = kwargs.pop("rate", None)
+        metadata = kwargs.pop("metadata", None)
         ffmpeg_para = kwargs.pop("ffmpeg_para", None)
         audio = ffmpeg_decode(pcm, audio_format, rate, metadata, ffmpeg_para)
     
