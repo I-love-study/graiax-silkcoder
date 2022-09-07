@@ -7,15 +7,14 @@ from numbers import Real
 filelike = Union[PathLike, str, BytesIO]
 Num = Union[int, float]
 
-
 @overload
 async def async_encode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Literal[Codec.wave] = None,
-                       rate: int = None,
+                       codec: Literal[Codec.wave] = Codec.wave,
+                       rate: int = -1,
                        ss: Num = 0,
-                       t: Num = 0,
+                       t: Num = -1,
                        tencent: bool = True,
                        ios_adaptive: bool = False) -> Optional[bytes]:
     """
@@ -34,16 +33,15 @@ async def async_encode(input_voice: Union[filelike, bytes],
     """
     ...
 
-
 @overload
 async def async_encode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Literal[Codec.libsndfile] = None,
-                       audio_format: str = None,
-                       rate: int = None,
+                       codec: Literal[Codec.libsndfile] = Codec.libsndfile,
+                       audio_format: Optional[str] = None,
+                       rate: int = -1,
                        ss: Num = 0,
-                       t: Num = 0,
+                       t: Num = -1,
                        tencent: bool = True,
                        ios_adaptive: bool = False) -> Optional[bytes]:
     """
@@ -63,19 +61,18 @@ async def async_encode(input_voice: Union[filelike, bytes],
     """
     ...
 
-
 @overload
 async def async_encode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Literal[Codec.ffmpeg] = None,
-                       audio_format: str = None,
-                       rate: int = None,
+                       codec: Literal[Codec.ffmpeg] = Codec.ffmpeg,
+                       audio_format: Optional[str] = None,
+                       rate: int = -1,
                        ss: Num = 0,
-                       t: Num = 0,
+                       t: Num = -1,
                        tencent: bool = True,
                        ios_adaptive: bool = False,
-                       ffmpeg_para: List[str] = None) -> Optional[bytes]:
+                       ffmpeg_para: Optional[List[str]] = None) -> Optional[bytes]:
     """
     将音频文件转化为 silkv3 格式
 
@@ -94,12 +91,11 @@ async def async_encode(input_voice: Union[filelike, bytes],
     """
     ...
 
-
 @overload
 async def async_decode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Literal[Codec.wave] = None) -> Optional[bytes]:
+                       codec: Literal[Codec.wave] = Codec.wave) -> Optional[bytes]:
     """
     将silkv3音频转换为其他音频格式
 
@@ -110,15 +106,15 @@ async def async_decode(input_voice: Union[filelike, bytes],
     """
     ...
 
-
 @overload
 async def async_decode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Literal[Codec.libsndfile] = None,
-                       audio_format: str = None,
-                       quality: float = None,
-                       metadata: Dict[str, str] = None) -> Optional[bytes]:
+                       codec: Literal[Codec.libsndfile] = Codec.libsndfile,
+                       audio_format: Optional[str] = None,
+                       subtype: Optional[str] = None,
+                       quality: Optional[float] = None,
+                       metadata: Optional[Dict[str, str]]= None) -> Optional[bytes]:
     """
     将silkv3音频转换为其他音频格式
 
@@ -133,16 +129,15 @@ async def async_decode(input_voice: Union[filelike, bytes],
     """
     ...
 
-
 @overload
 async def async_decode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Literal[Codec.ffmpeg] = None,
-                       audio_format: str = None,
-                       rate: int = None,
-                       metadata: Dict[str, str] = None,
-                       ffmpeg_para: List[str] = None) -> Optional[bytes]:
+                       codec: Literal[Codec.ffmpeg] = Codec.ffmpeg,
+                       audio_format: Optional[str] = None,
+                       rate: Optional[Union[int, str]] = None,
+                       metadata: Optional[Dict[str, str]] = None,
+                       ffmpeg_para: Optional[List[str]] = None) -> Optional[bytes]:
     """
     将silkv3音频转换为其他音频格式
 
@@ -158,15 +153,14 @@ async def async_decode(input_voice: Union[filelike, bytes],
     """
     ...
 
-
 @overload
 def encode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
            /,
-           codec: Literal[Codec.wave] = None,
-           rate: int = None,
+           codec: Literal[Codec.wave] = Codec.wave,
+           rate: int = -1,
            ss: Num = 0,
-           t: Num = 0,
+           t: Num = -1,
            tencent: bool = True,
            ios_adaptive: bool = False) -> Optional[bytes]:
     """
@@ -185,16 +179,15 @@ def encode(input_voice: Union[filelike, bytes],
     """
     ...
 
-
 @overload
 def encode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
-           codec: Literal[Codec.libsndfile] = None,
+           codec: Literal[Codec.libsndfile] = Codec.libsndfile,
            /,
-           audio_format: str = None,
-           rate: int = None,
+           audio_format: Optional[str] = None,
+           rate: int = -1,
            ss: Num = 0,
-           t: Num = 0,
+           t: Num = -1,
            tencent: bool = True,
            ios_adaptive: bool = False) -> Optional[bytes]:
     """
@@ -214,19 +207,18 @@ def encode(input_voice: Union[filelike, bytes],
     """
     ...
 
-
 @overload
 def encode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
            /,
-           codec: Literal[Codec.ffmpeg] = None,
-           audio_format: str = None,
-           rate: int = None,
+           codec: Literal[Codec.ffmpeg] = Codec.ffmpeg,
+           audio_format: Optional[str] = None,
+           rate: int = -1,
            ss: Num = 0,
-           t: Num = 0,
+           t: Num = -1,
            tencent: bool = True,
            ios_adaptive: bool = False,
-           ffmpeg_para: List[str] = None) -> Optional[bytes]:
+           ffmpeg_para: Optional[List[str]] = None) -> Optional[bytes]:
     """
     将音频文件转化为 silkv3 格式
 
@@ -245,12 +237,11 @@ def encode(input_voice: Union[filelike, bytes],
     """
     ...
 
-
 @overload
 def decode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
            /,
-           codec: Literal[Codec.wave] = None) -> Optional[bytes]:
+           codec: Literal[Codec.wave] = Codec.wave) -> Optional[bytes]:
     """
     将silkv3音频转换为其他音频格式
 
@@ -261,15 +252,14 @@ def decode(input_voice: Union[filelike, bytes],
     """
     ...
 
-
 @overload
 def decode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
            /,
-           codec: Literal[Codec.libsndfile] = None,
-           audio_format: str = None,
-           quality: float = None,
-           metadata: Dict[str, str] = None) -> Optional[bytes]:
+           codec: Literal[Codec.libsndfile] = Codec.libsndfile,
+           audio_format: Optional[str] = None,
+           quality: Optional[float] = None,
+           metadata: Optional[Dict[str, str]] = None) -> Optional[bytes]:
     """
     将silkv3音频转换为其他音频格式
 
@@ -284,16 +274,15 @@ def decode(input_voice: Union[filelike, bytes],
     """
     ...
 
-
 @overload
 def decode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
            /,
-           codec: Literal[Codec.ffmpeg] = None,
-           audio_format: str = None,
-           rate: int = None,
-           metadata: Dict[str, str] = None,
-           ffmpeg_para: List[str] = None) -> Optional[bytes]:
+           codec: Literal[Codec.ffmpeg] = Codec.ffmpeg,
+           audio_format: Optional[str] = None,
+           rate: Optional[Union[int, str]] = None,
+           metadata: Optional[Dict[str, str]] = None,
+           ffmpeg_para: Optional[List[str]] = None) -> Optional[bytes]:
     """
     将silkv3音频转换为其他音频格式
 

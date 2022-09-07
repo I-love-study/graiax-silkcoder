@@ -26,8 +26,8 @@ class ArgTypeMixin(Enum):
     def argtype(cls, s: str) -> Enum:
         try:
             return cls[s]
-        except KeyError:
-            raise ValueError("Not support Value")
+        except KeyError as e:
+            raise ValueError("Not support Value") from e
 
     def __str__(self):
         return self.name
@@ -37,7 +37,7 @@ class Codec(ArgTypeMixin, Enum):
     ffmpeg = 1
     libsndfile = 2
 
-def choose_encoder(input_bytes: bytes = None):
+def choose_encoder(input_bytes: bytes):
     if iswave(input_bytes):
         return Codec.wave
     elif libsndfile_available and is_libsndfile_supported(input_bytes):
@@ -47,7 +47,7 @@ def choose_encoder(input_bytes: bytes = None):
         return Codec.ffmpeg
 
 
-def choose_decoder(audio_format: str = None):
+def choose_decoder(audio_format: str):
     audio_format = audio_format.upper()
     if audio_format == 'WAV':
         return Codec.wave

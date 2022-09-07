@@ -6,33 +6,33 @@ import os
 import sys
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 from .ffmpeg import *
 from .libsndfile import *
-from .utils import (Codec, input_transform, output_transform,
-                    choose_decoder, choose_encoder)
+from .utils import Codec, input_transform, output_transform, choose_decoder, choose_encoder
 from .wav import *
 
 try:
     from .silkv3 import *
-except RuntimeError:
+except RuntimeError as e:
     if sys.platform == "win32":
         raise RuntimeError(
             "It seems that you machine doesn't have Visual C++ runtime.\n"
             "You can download it from https://docs.microsoft.com/zh-CN/cpp/windows/latest-supported-vc-redist"
-        )
+        ) from e
 
 filelike = Union[os.PathLike, str, BytesIO]
 Num = Union[int, float]
 
+
 async def async_encode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Codec = None,
-                       rate: int = None,
+                       codec: Optional[Codec] = None,
+                       rate: int = -1,
                        ss: Num = 0,
-                       t: Num = 0,
+                       t: Num = -1,
                        tencent: bool = True,
                        ios_adaptive: bool = False,
                        **kwargs) -> Optional[bytes]:
@@ -59,11 +59,11 @@ async def async_encode(input_voice: Union[filelike, bytes],
     if codec == Codec.wave:
         pcm = wav_encode(input_bytes, ss, t)
     elif codec == Codec.libsndfile:
-        audio_format = kwargs.get("audio_format", None)
+        audio_format = kwargs.get("audio_format")
         pcm = await async_sndfile_encode(input_bytes, audio_format, ss, t)
     else:
-        audio_format = kwargs.get("audio_format", None)
-        ffmpeg_para = kwargs.pop("ffmpeg_para", None)
+        audio_format = kwargs.get("audio_format")
+        ffmpeg_para = kwargs.get("ffmpeg_para")
         pcm = await async_ffmpeg_encode(input_bytes, audio_format, ss, t, ffmpeg_para)
 
     silk = await async_silk_encode(pcm, rate, tencent, ios_adaptive)
@@ -74,8 +74,8 @@ async def async_encode(input_voice: Union[filelike, bytes],
 async def async_decode(input_voice: Union[filelike, bytes],
                        output_voice: Union[filelike, None] = None,
                        /,
-                       codec: Codec = None,
-                       audio_format: str = None,
+                       codec: Optional[Codec] = None,
+                       audio_format: Optional[str] = None,
                        **kwargs) -> Optional[bytes]:
     """
     将silkv3音频转换为其他音频格式
@@ -92,28 +92,34 @@ async def async_decode(input_voice: Union[filelike, bytes],
     """
     input_bytes = input_transform(input_voice)
 
-    if codec is None:
-        codec = choose_decoder(input_bytes)
     if audio_format is None:
         if isinstance(output_voice, (os.PathLike, str)):
             audio_format = Path(output_voice).suffix[1:]
         else:
             raise ValueError("Pls tell me what audio format to use")
+    if codec is None:
+        codec = choose_decoder(audio_format)
 
     pcm = await async_silk_decode(input_bytes)
 
     if codec == Codec.wave:
         audio = wav_decode(pcm)
     elif codec == Codec.libsndfile:
-        metadata = kwargs.pop("metadata", None)
-        quality = kwargs.pop("quality", None)
-        subtype = kwargs.pop("subtype", None)
+        metadata = kwargs.get("metadata")
+        quality = kwargs.get("quality")
+        subtype = kwargs.get("subtype")
         audio = await async_sndfile_decode(pcm, audio_format, subtype, quality, metadata)
     elif codec == Codec.ffmpeg:
-        rate = kwargs.pop("rate", None)
-        metadata = kwargs.pop("metadata", None)
-        ffmpeg_para = kwargs.pop("ffmpeg_para", None)
-        audio = await async_ffmpeg_decode(pcm, audio_format, rate, metadata, ffmpeg_para)
+        rate = kwargs.get("rate")
+        metadata = kwargs.get("metadata")
+        ffmpeg_para = kwargs.get("ffmpeg_para")
+        audio = await async_ffmpeg_decode(
+            pcm,
+            audio_format,
+            ffmpeg_para,
+            rate,
+            metadata,
+        )
 
     return output_transform(output_voice, audio)
 
@@ -121,11 +127,10 @@ async def async_decode(input_voice: Union[filelike, bytes],
 def encode(input_voice: Union[filelike, bytes],
            output_voice: Union[filelike, None] = None,
            /,
-           codec: Codec = None,
-           audio_format: str = None,
-           rate: int = None,
-           ss: int = 0,
-           t: int = 0,
+           codec: Optional[Codec] = None,
+           rate: int = -1,
+           ss: Num = 0,
+           t: Num = -1,
            tencent: bool = True,
            ios_adaptive: bool = False,
            **kwargs) -> Optional[bytes]:
@@ -154,22 +159,22 @@ def encode(input_voice: Union[filelike, bytes],
     if codec == Codec.wave:
         pcm = wav_encode(input_bytes, ss, t)
     elif codec == Codec.libsndfile:
-        audio_format = kwargs.get("audio_format", None)
+        audio_format = kwargs.get("audio_format")
         pcm = sndfile_encode(input_bytes, audio_format, ss, t)
     else:
-        audio_format = kwargs.get("audio_format", None)
-        ffmpeg_para = kwargs.pop("ffmpeg_para", None)
+        audio_format = kwargs.get("audio_format")
+        ffmpeg_para = kwargs.get("ffmpeg_para")
         pcm = ffmpeg_encode(input_bytes, audio_format, ss, t, ffmpeg_para)
 
     silk = silk_encode(pcm, rate, tencent, ios_adaptive)
     return output_transform(output_voice, silk)
 
 
-def decode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
-           output_voice: Union[os.PathLike, str, BytesIO, None] = None,
+def decode(input_voice: Union[filelike, bytes],
+           output_voice: Union[filelike, None] = None,
            /,
-           codec: str = None,
-           audio_format: str = None,
+           codec: Optional[Codec] = None,
+           audio_format: Optional[str] = None,
            **kwargs) -> Optional[bytes]:
     """
     将silkv3音频转换为其他音频格式
@@ -186,25 +191,25 @@ def decode(input_voice: Union[os.PathLike, str, BytesIO, bytes],
     input_bytes = input_transform(input_voice)
     pcm = silk_decode(input_bytes)
 
-    if codec is None:
-        codec = choose_decoder(input_bytes)
     if audio_format is None:
         if isinstance(output_voice, (os.PathLike, str)):
             audio_format = Path(output_voice).suffix[1:]
         else:
             raise ValueError("Pls tell me what audio format to use")
+    if codec is None:
+        codec = choose_decoder(audio_format)
 
     if codec == Codec.wave:
         audio = wav_decode(pcm)
     elif codec == Codec.libsndfile:
-        metadata = kwargs.pop("metadata", None)
-        quality = kwargs.pop("quality", None)
-        subtype = kwargs.pop("subtype", None)
+        metadata = kwargs.get("metadata")
+        quality = kwargs.get("quality")
+        subtype = kwargs.get("subtype")
         audio = sndfile_decode(pcm, audio_format, subtype, quality, metadata)
     elif codec == Codec.ffmpeg:
-        rate = kwargs.pop("rate", None)
-        metadata = kwargs.pop("metadata", None)
-        ffmpeg_para = kwargs.pop("ffmpeg_para", None)
-        audio = ffmpeg_decode(pcm, audio_format, rate, metadata, ffmpeg_para)
-    
+        rate = kwargs.get("rate")
+        metadata = kwargs.get("metadata")
+        ffmpeg_para = kwargs.get("ffmpeg_para")
+        audio = ffmpeg_decode(pcm, audio_format, ffmpeg_para, rate, metadata)
+
     return output_transform(output_voice, audio)

@@ -77,7 +77,7 @@ python -m graiax.silkcoder decode -i "a.silk" "a.wav"
 
 ## 是 `ffmpeg` 还是 `libsndfile`
 
-在该项目最开始的时候，就有人吐槽过：为了简简单单的音频转换去下载一个大的离谱的 ffmpeg，这也太麻了吧。
+在该项目最开始的时候，就有人吐槽过：为了简简单单的音频转换去下载一个大的离谱的 ffmpeg，这也太麻了吧。  
 （注：虽然说 ffmpeg 可以通过 disable 一大堆不必要视频/滤镜库来达到减小体积的目的，但是这需要自己编译，对小白挺不友好的）
 
 所以，从 0.3.0 开始，开始增加了通过 libsndfile 来使用解析音频。
@@ -209,4 +209,5 @@ silkcoder.decode("a.silk", "a.mp3", ffmpeg_para = ["-ar", "44100"])
 
 ## 注
 
-1. `graiax-silkcoder` 对 `libsndfile` 的支持来源于第三方库 `soundfile`，而该库在 1.1.0 之前并不支持mp3、opus
+1. `graiax-silkcoder` 对 `libsndfile` 的支持来源于第三方库 `soundfile`，而该库在 1.1.0 之前并不支持mp3、opus。  
+   假设你有相关需求，请到[这里](https://github.com/bastibe/python-soundfile/releases)下载 `pre-release` 版

@@ -65,4 +65,5 @@ if __name__ == "__main__":
                     raise CoderError(f"ffmpeg error:\n{p_err.decode(errors='ignore')}")
             else:
                 raise ValueError("Unsupport Format")
+        assert audio is not None
         play_audio(audio)

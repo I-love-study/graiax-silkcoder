@@ -1,0 +1,6 @@
+def encode(data: bytes, rate: int, tencent: bool):
+    ...
+
+
+def decode(data: bytes):
+    ...
