@@ -17,7 +17,7 @@ try:
     import soundfile
     import soxr
     libsndfile_available = True
-except ImportError:
+except (ImportError, OSError):
     libsndfile_available = False
 
 class ArgTypeMixin(Enum):
@@ -167,8 +167,7 @@ def play_audio(source: Union[str, bytes]):
     )
     p.start()
     print("请按'q'中断")
-    while p.is_alive():
-        if msvcrt.kbhit() and msvcrt.getch() in b"qQ": break
+    while p.is_alive() and not (msvcrt.kbhit() and msvcrt.getch() in b"qQ"):
         time.sleep(0.1)
     p.terminate()
     p.join()

@@ -7,7 +7,7 @@ try:
     import soundfile
     import soxr
     libsndfile_available = True
-except ImportError:
+except (ImportError, OSError):
     libsndfile_available = False
 
 Num = Union[int, float]

@@ -14,18 +14,14 @@ jobs:
       fail-fast: true
       matrix:
          # Github Action 不支持 Arm + MacOS，那不如不构建
-         os: [ubuntu-latest, windows-latest]
+         os: [ubuntu-latest, windows-latest, macos-latest]
          cibw_python: ["cp38-*", "cp39-*", "cp310-*", "cp311-*"]
-         cibw_arch: ["auto64", "auto32"]
-         include:
-           - os: ubuntu-latest
-             cibw_arch: aarch64
 
     steps:
     - uses: actions/checkout@v2
 
     - name: Install Qemu
-      if: matrix.cibw_archs == 'aarch64'
+      if: matrix.os == 'ubuntu-latest'
       uses: docker/setup-qemu-action@v2
       with:
         platforms: arm64
@@ -35,7 +31,6 @@ jobs:
       env:
         CIBW_BUILD_VERBOSITY: 1
         CIBW_BUILD: ${{ matrix.cibw_python }}
-        CIBW_ARCHS: ${{ matrix.cibw_arch }}
 
       
     - uses: actions/upload-artifact@v2
