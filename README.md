@@ -210,4 +210,4 @@ silkcoder.decode("a.silk", "a.mp3", ffmpeg_para = ["-ar", "44100"])
 ## 注
 
 1. `graiax-silkcoder` 对 `libsndfile` 的支持来源于第三方库 `soundfile`，而该库在 1.1.0 之前并不支持mp3、opus。  
-   假设你有相关需求，请到[这里](https://github.com/bastibe/python-soundfile/releases)下载 `pre-release` 版
+   ~~假设你有相关需求，请到[这里](https://github.com/bastibe/python-soundfile/releases)下载 `pre-release` 版~~ 0.11.0 已经发布了到 PyPI 了哟。

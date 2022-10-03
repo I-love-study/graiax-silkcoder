@@ -8,12 +8,11 @@ on:
 
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }} & ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }}
+    name: Build wheels on ${{ matrix.os }} & ${{ matrix.cibw_python }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
-         # Github Action 不支持 Arm + MacOS，那不如不构建
          os: [ubuntu-latest, windows-latest, macos-latest]
          cibw_python: ["cp38-*", "cp39-*", "cp310-*", "cp311-*"]
 
