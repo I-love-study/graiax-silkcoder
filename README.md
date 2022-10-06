@@ -85,7 +85,7 @@ python -m graiax.silkcoder decode -i "a.silk" "a.wav"
 > libsndfile 是一款广泛用于读写音频文件的C语言库，
 他支持包括 flac, ogg, opus, mp3<sup>[[1]](#注)</sup>等多种格式。
 
-因为
+注：在同时可以使用 `ffmpeg` 和 `libsndfile` 的情况下， `graiax-silkcoder` 会优先使用 `ffmpeg` 进行转码
 
 ## 使用方法
 

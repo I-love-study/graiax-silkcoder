@@ -5,6 +5,7 @@ import wave
 from io import BytesIO
 from enum import Enum
 from pathlib import Path
+from shutil import which
 from typing import Union, Optional
 
 try:
@@ -122,21 +123,6 @@ def soxr_available(ffmpeg_path: str):
                          stderr=subprocess.PIPE,
                          encoding="utf-8")
     return "--enable-libsoxr" in p.communicate()[1]
-
-
-def which(program):
-    """类似于 UNIX 中的 which 命令"""
-    # Add .exe program extension for windows support
-    if os.name == "nt" and not program.endswith(".exe"):
-        program += ".exe"
-
-    envdir_list = [os.curdir] + os.environ["PATH"].split(os.pathsep)
-
-    for envdir in envdir_list:
-        program_path = os.path.join(envdir, program)
-        if os.path.isfile(program_path) and os.access(program_path, os.X_OK):
-            return program_path
-
 
 def get_ffmpeg():
     """获取本机拥有的编解码器"""

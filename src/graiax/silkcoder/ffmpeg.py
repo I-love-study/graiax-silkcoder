@@ -1,4 +1,5 @@
 import asyncio
+import os
 import subprocess
 import sys
 from typing import Dict, List, Optional, Union
@@ -17,9 +18,17 @@ else:
     ffmpeg_coder, soxr = "ffmpeg", False
     ffmpeg_available = False
 
+def set_ffmpeg_path(path: Union[os.PathLike, str]):
+    global ffmpeg_coder, ffmpeg_available
+    if isinstance(path, os.PathLike):
+        path = os.fspath(path)
+    ffmpeg_coder = path
+    ffmpeg_available = True
 
 def get_ffmpeg_encode_cmd(audio_format: Optional[str], ss: Num, t: Num,
                           ffmpeg_para: Optional[List[str]]):
+    if not ffmpeg_available:
+        raise FileNotFoundError("Where's your ffmpeg? Read README.md again plz.")
     cmd = [ffmpeg_coder]
     if audio_format is not None: cmd += ['-f', audio_format]
 
@@ -42,8 +51,11 @@ def ffmpeg_encode(data: bytes,
                   t: Num = -1,
                   ffmpeg_para: Optional[List[str]] = None):
     cmd = get_ffmpeg_encode_cmd(audio_format, ss, t, ffmpeg_para)
-    shell = subprocess.Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-    p_out, p_err = shell.communicate(input=data)
+    try:
+        shell = subprocess.Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        p_out, p_err = shell.communicate(input=data)
+    except FileNotFoundError as e:
+        raise FileNotFoundError("Where's your ffmpeg?") from e
     if shell.returncode != 0:
         raise CoderError(f"ffmpeg error:\n{p_err.decode(errors='ignore')}")
     return p_out
@@ -55,8 +67,11 @@ async def async_ffmpeg_encode(data: bytes,
                               t: Num = -1,
                               ffmpeg_para: Optional[List[str]] = None):
     cmd = get_ffmpeg_encode_cmd(audio_format, ss, t, ffmpeg_para)
-    shell = await asyncio.create_subprocess_exec(*cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-    p_out, p_err = await shell.communicate(input=data)
+    try:
+        shell = await asyncio.create_subprocess_exec(*cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        p_out, p_err = await shell.communicate(input=data)
+    except FileNotFoundError as e:
+        raise FileNotFoundError("Where's your ffmpeg?") from e
     if shell.returncode != 0:
         raise CoderError(f"ffmpeg error:\n{p_err.decode(errors='ignore')}")
     return p_out
@@ -65,6 +80,8 @@ async def async_ffmpeg_encode(data: bytes,
 def get_ffmpeg_decode_cmd(audio_format: str, ffmpeg_para: Optional[List[str]],
                           rate: Optional[Union[int, str]],
                           metadata: Optional[Dict[str, Union[str, Num]]]):
+    if not ffmpeg_available:
+        raise FileNotFoundError("Where's your ffmpeg? Read README.md again plz.")
     cmd = [ffmpeg_coder, '-f', 's16le', '-ar', '24000', '-ac', '1', '-i', 'pipe:']
     if audio_format is not None: cmd += ['-f', audio_format]
     if rate is not None: cmd += ['-b:a', str(rate)]
@@ -107,5 +124,5 @@ async def async_ffmpeg_decode(data,
 
 __all__ = [
     "ffmpeg_encode", "ffmpeg_decode", "async_ffmpeg_encode", "async_ffmpeg_decode",
-    "ffmpeg_available"
+    "ffmpeg_available", "set_ffmpeg_path"
 ]
