@@ -30,7 +30,7 @@ jobs:
         path: ./wheelhouse/*.whl
   
   build_wheels_arch:
-    name: Build wheels on ${{ matrix.cibw_python }} ${{ mateix.arch }}
+    name: Build wheels on ${{ matrix.cibw_python }} ${{ matrix.arch }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
