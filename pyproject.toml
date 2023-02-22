@@ -32,6 +32,9 @@ run-setuptools = true
 # PyPy，不行
 skip = "pp*"
 
+[tool.cibuildwheel.windows]
+arch = ["auto", "arm64"]
+
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]
 
