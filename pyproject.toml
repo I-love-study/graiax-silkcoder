@@ -33,7 +33,7 @@ run-setuptools = true
 skip = "pp*"
 
 [tool.cibuildwheel.windows]
-archs = ["auto", "arm64"]
+archs = ["auto", "ARM64"]
 
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]
