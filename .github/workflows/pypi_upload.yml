@@ -30,12 +30,12 @@ jobs:
         path: ./wheelhouse/*.whl
 
   build_wheels_arch_windows:
-    name: Build wheels on ${{ matrix.cibw_python }} ${{ matrix.arch }}
+    name: Build Windows arm64 wheels on ${{ matrix.cibw_python }}
     runs-on: windows-latest
     strategy:
       fail-fast: true
       matrix:
-         cibw_python: ["cp38-*", "cp39-*", "cp310-*", "cp311-*"]
+         cibw_python: ["cp39-*", "cp310-*", "cp311-*"]
     
     steps:
     - uses: actions/checkout@v2
