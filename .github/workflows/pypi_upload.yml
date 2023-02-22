@@ -51,7 +51,7 @@ jobs:
       uses: pypa/cibuildwheel@v2.9.0
       env:
         CIBW_BUILD_VERBOSITY: 1
-        CIBW_BUILD: ${{ matrix.cibw_python }}${{ mateix.arch }}_aarch64
+        CIBW_BUILD: ${{ matrix.cibw_python }}${{ matrix.arch }}_aarch64
 
     - uses: actions/upload-artifact@v2
       with:
