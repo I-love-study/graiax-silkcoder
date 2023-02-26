@@ -35,7 +35,8 @@ conda install ffmpeg -c conda-forge
 相关issue: #23
 
 现在本库已经通过 `Github Actions` 来预编译 whl 了，出现这种问题一般不是说没有编译。  
-如果遇到这种问题，请在[这里](https://aka.ms/vs/17/release/vc_redist.x64.exe)下载最新版本的 **C++ Redistributable**
+如果遇到这种问题，请在[这里](https://aka.ms/vs/17/release/vc_redist.x64.exe)下载最新版本的 **C++ Redistributable**  
+~~我去除了大部分的 C++ 的代码，但是我保留了一部分，才让你知道，才知道你用的，是 C++~~
 
 ### IOS 音频问题
 
@@ -209,5 +210,5 @@ silkcoder.decode("a.silk", "a.mp3", ffmpeg_para = ["-ar", "44100"])
 
 ## 注
 
-1. `graiax-silkcoder` 对 `libsndfile` 的支持来源于第三方库 `soundfile`，而该库在 1.1.0 之前并不支持mp3、opus。  
-   ~~假设你有相关需求，请到[这里](https://github.com/bastibe/python-soundfile/releases)下载 `pre-release` 版~~ 0.11.0 已经发布了到 PyPI 了哟。
+1. `graiax-silkcoder` 对 `libsndfile` 的支持来源于第三方库 `soundfile`，而该库在 0.11.0 之前并不支持mp3、opus。  
+   可能有一些库会将 `soundfile` 锁定在 0.11.0 版本前，如果 mp3 无法读取，请选择 ffmpeg
