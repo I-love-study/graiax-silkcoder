@@ -31,6 +31,7 @@ jobs:
 
   build_wheels_arch_windows:
     name: Build Windows arm64 wheels on ${{ matrix.cibw_python }}
+    if: ${{ false }}
     runs-on: windows-latest
     strategy:
       fail-fast: true
