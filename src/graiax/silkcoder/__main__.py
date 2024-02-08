@@ -1,6 +1,6 @@
 from io import BytesIO
-from . import decode, encode
-from .utils import Codec, CoderError, Codec, choose_encoder, play_audio, issilk, iswave
+from . import encode, decode
+from .utils import Codec, CoderError, play_audio, issilk, iswave, soundfile, is_libsndfile_supported
 import argparse
 from pathlib import Path
 
@@ -47,13 +47,11 @@ if __name__ == "__main__":
         elif iswave(b):
             audio = b
         else:
-            encoder = choose_encoder(b)
-            if encoder == Codec.libsndfile:
-                import soundfile
+            if soundfile is not None and is_libsndfile_supported(b):
                 data, samplerate = soundfile.read(BytesIO(b))
                 soundfile.write(b2 := BytesIO(), data, samplerate, format="wav")
                 audio = b2.getvalue()
-            elif encoder == Codec.ffmpeg:
+            else:
                 import subprocess
                 from .ffmpeg import ffmpeg_coder
                 cmd = [ffmpeg_coder, "-i", "cache:pipe:0", "-"]
@@ -64,7 +62,5 @@ if __name__ == "__main__":
                 audio, p_err = shell.communicate(input=b)
                 if shell.returncode != 0:
                     raise CoderError(f"ffmpeg error:\n{p_err.decode(errors='ignore')}")
-            else:
-                raise ValueError("Unsupport Format")
         assert audio is not None
         play_audio(audio)
