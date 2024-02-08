@@ -28,13 +28,22 @@ conda install graiax-silkcoder -c conda-forge
 conda install ffmpeg -c conda-forge
 ```
 
+## 用法
+
+### 类方法
+
+WIP
+
 ## Q&A
 
-### ImportError：DLL load failed while importing _silkv3：找不到指定的模块
+### ImportError：DLL load failed while importing _silkv3：找不到指定的模块（0.4.0-）
 
 相关issue: #23
 
-现在本库已经通过 `Github Actions` 来预编译 whl 了，出现这种问题一般不是说没有编译。  
+> [!NOTE] 注意
+> 0.4.0+ 又将 C++ 部分给删除了，所以 0.4.0+ 不会遇到相关问题
+
+因为在 0.2.x~0.3.x 都是用了 C++ 标准库里的东西，所以没安装的会出现这个 Error  
 如果遇到这种问题，请在[这里](https://aka.ms/vs/17/release/vc_redist.x64.exe)下载最新版本的 **C++ Redistributable**  
 ~~我去除了大部分的 C++ 的代码，但是我保留了一部分，才让你知道，才知道你用的，是 C++~~
 
@@ -66,7 +75,7 @@ from graiax import silkcoder
 silkcoder.set_ffmpeg_path("./ffmpeg")
 ```
 
-## CLI（0.2.0新增）
+### CLI（0.2.0新增）
 
 使用办法
 
@@ -76,7 +85,7 @@ python -m graiax.silkcoder encode -i "a.wav" "a.silk"
 python -m graiax.silkcoder decode -i "a.silk" "a.wav"
 ```
 
-## 是 `ffmpeg` 还是 `libsndfile`
+### 是 `ffmpeg` 还是 `libsndfile`
 
 在该项目最开始的时候，就有人吐槽过：为了简简单单的音频转换去下载一个大的离谱的 ffmpeg，这也太麻了吧。  
 （注：虽然说 ffmpeg 可以通过 disable 一大堆不必要视频/滤镜库来达到减小体积的目的，但是这需要自己编译，对小白挺不友好的）
@@ -162,7 +171,7 @@ from graiax import silkcoder
 silkcoder.encode("a.wav", "a.silk", rate = 70000)
 ```
 
-## 解码
+### 解码
 
 跟编码一样，你的输入和输出都支持 pathlike、str、bytes
 

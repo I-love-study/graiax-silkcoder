@@ -1,19 +1,23 @@
 [project]
 name = "graiax-silkcoder"
-version = "0.3.6"
+version = "0.4.0a0" # WIP
 description = "transform audio file to silk"
 keywords = ["silkv3"]
 authors = [
     {name = "I Love Study", email = "1450069615@qq.com"},
 ]
-dependencies = []
+dependencies = [
+    # 虽然写着行的时候 3.13 还在 a0，但是万一呢
+    "audioooooooooooooops; python_version >= '3.13'"
+]
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "BSD-3-Clause"}
 
 [project.optional-dependencies]
 # python-soxr 在 0.3.0a2 后才支持 nogil
-libsndfile = ["soundfile", "soxr>=0.3.0a2"]
+# soundfile 0.11.0 支持 mp3 格式
+libsndfile = ["soundfile >= 0.11.0", "soxr >= 0.3.0a2"]
 ffmpeg = ["imageio-ffmpeg"]
 
 [project.urls]

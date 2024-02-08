@@ -2,12 +2,12 @@ from setuptools import Extension
 from glob import glob
 import sys
 
-
 ext = Extension('graiax.silkcoder._silkv3',
-                sources=[*glob('src/c_silkv3/src/*.c'),
-                         "src/c_silkv3/coder.cpp",],
+                sources=[
+                    *glob('src/c_silkv3/src/*.c'),
+                    *glob("src/c_silkv3/*.c")
+                ],
                 include_dirs=["src/c_silkv3/interface/"])
-
 
 if sys.byteorder == "big":
     ext.define_macros.append(("_SYSTEM_IS_BIG_ENDIAN", True))
