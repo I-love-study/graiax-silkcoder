@@ -48,7 +48,7 @@ def sndfile_decode(data: bytes,
                    metadata: Optional[Dict[str, str]] = None):
     if soundfile is None or soxr is None:
         raise ImportError("Do not have soundfile")
-    if quality is not None and 0 <= quality <= 1:
+    if quality is not None and not (0 <= quality <= 1):
         raise ValueError("vbr should between 0 and 1")
     pcm, samplerate = soundfile.read(BytesIO(data),
                                      samplerate=24000,
