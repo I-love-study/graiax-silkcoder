@@ -15,6 +15,7 @@ typedef struct {
 void initializeDataStream(DataStream *stream, size_t initialCapacity);
 void writeDataToStream(DataStream *stream, unsigned char *data, size_t dataSize);
 void freeDataStream(DataStream *stream);
+void removeDataFromStream(DataStream *stream, size_t dataSize);
 int findIndex(int targetNumber, int array[], int size);
 
 #endif /* _STREAM_H_ */

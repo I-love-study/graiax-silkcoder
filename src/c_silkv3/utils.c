@@ -15,7 +15,7 @@ void initializeDataStream(DataStream *stream, size_t initialCapacity) {
 void writeDataToStream(DataStream *stream, unsigned char *data,
                        size_t dataSize) {
   if (stream->size + dataSize > stream->capacity) {
-    while (stream->size + dataSize > stream -> capacity){
+    while (stream->size + dataSize > stream->capacity) {
       stream->capacity += stream->init_capacity;
     }
     stream->buffer = realloc(stream->buffer, stream->capacity);
@@ -26,6 +26,11 @@ void writeDataToStream(DataStream *stream, unsigned char *data,
 
   memcpy(stream->buffer + stream->size, data, dataSize);
   stream->size += dataSize;
+}
+
+void removeDataFromStream(DataStream *stream, size_t dataSize) {
+  stream->size -= dataSize;
+  memset(stream->buffer + stream->size, '\0', dataSize);
 }
 
 void freeDataStream(DataStream *stream) {
