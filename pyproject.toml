@@ -28,6 +28,9 @@ package-dir = "src"
 includes = ["src/graiax"]  
 source-includes = ["src/c_silkv3"]
 
+[tool.pdm.dev-dependencies]
+test = ["librosa"]
+
 [tool.pdm.build]
 setup-script = "build.py"
 run-setuptools = true
