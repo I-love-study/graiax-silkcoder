@@ -28,75 +28,6 @@ conda install graiax-silkcoder -c conda-forge
 conda install ffmpeg -c conda-forge
 ```
 
-## 用法
-
-### 类方法
-
-WIP
-
-## Q&A
-
-### ImportError：DLL load failed while importing _silkv3：找不到指定的模块（0.4.0-）
-
-相关issue: #23
-
-> [!NOTE] 注意
-> 0.4.0+ 又将 C++ 部分给删除了，所以 0.4.0+ 不会遇到相关问题
-
-因为在 0.2.x~0.3.x 都是用了 C++ 标准库里的东西，所以没安装的会出现这个 Error  
-如果遇到这种问题，请在[这里](https://aka.ms/vs/17/release/vc_redist.x64.exe)下载最新版本的 **C++ Redistributable**  
-~~我去除了大部分的 C++ 的代码，但是我保留了一部分，才让你知道，才知道你用的，是 C++~~
-
-### IOS 音频问题
-
-IOS 的音频解码器因为某些**特性**，只支持解码 **25kbps 以下** 的音频。  
-所以在 0.2.6 中，我们新增了一个 `ios_adaptive` 参数（默认为 False）。  
-当为 True 时，将把自适应最高码率限制在 24kbps 以下（一般是限制在 100kbps 以下）
-
-### ffmpeg 转换成 `aac` 格式的问题
-
-因为 `graiax-silkcoder` **全程**采用 PIPE 的形式跟 ffmpeg 传输，  
-所以假设你想要将 silk 转码成 aac 的时候，就会出现一些问题。  
-解决方法如下
-
-``` python
-await silkcoder.async_decode("a.silk", "a.m4a", audio_format="adts")
-```
-
-注：ADTS 是 AAC 音频的传输流格式
-
-### 自定义ffmpeg_path
-
-可能有一些用户会想要自定义ffmpeg的路径
-你可以使用以下方法解决:
-
-```python
-from graiax import silkcoder
-silkcoder.set_ffmpeg_path("./ffmpeg")
-```
-
-### CLI（0.2.0新增）
-
-使用办法
-
-```bash
-# 其他参数与encode / decode 保持一致
-python -m graiax.silkcoder encode -i "a.wav" "a.silk"
-python -m graiax.silkcoder decode -i "a.silk" "a.wav"
-```
-
-### 是 `ffmpeg` 还是 `libsndfile`
-
-在该项目最开始的时候，就有人吐槽过：为了简简单单的音频转换去下载一个大的离谱的 ffmpeg，这也太麻了吧。  
-（注：虽然说 ffmpeg 可以通过 disable 一大堆不必要视频/滤镜库来达到减小体积的目的，但是这需要自己编译，对小白挺不友好的）
-
-所以，从 0.3.0 开始，开始增加了通过 libsndfile 来使用解析音频。
-
-> libsndfile 是一款广泛用于读写音频文件的C语言库，
-他支持包括 flac, ogg, opus, mp3<sup>[[1]](#注)</sup>等多种格式。
-
-注：在同时可以使用 `ffmpeg` 和 `libsndfile` 的情况下， `graiax-silkcoder` 会优先使用 `ffmpeg` 进行转码
-
 ## 使用方法
 
 Tips:  
@@ -216,6 +147,75 @@ from graiax import silkcoder
 
 silkcoder.decode("a.silk", "a.mp3", ffmpeg_para = ["-ar", "44100"])
 ```
+
+### CLI（0.2.0新增）
+
+使用办法
+
+```bash
+# 其他参数与encode / decode 保持一致
+python -m graiax.silkcoder encode -i "a.wav" "a.silk"
+python -m graiax.silkcoder decode -i "a.silk" "a.wav"
+```
+
+## Q&A
+
+
+
+### IOS 音频问题
+
+IOS 的音频解码器因为某些**特性**，只支持解码 **25kbps 以下** 的音频。  
+所以在 0.2.6 中，我们新增了一个 `ios_adaptive` 参数（默认为 False）。  
+当为 True 时，将把自适应最高码率限制在 24kbps 以下（一般是限制在 100kbps 以下）
+
+### ffmpeg 转换成 `aac` 格式的问题
+
+因为 `graiax-silkcoder` **全程**采用 PIPE 的形式跟 ffmpeg 传输，  
+所以假设你想要将 silk 转码成 aac 的时候，就会出现一些问题。  
+解决方法如下
+
+``` python
+await silkcoder.async_decode("a.silk", "a.m4a", audio_format="adts")
+```
+
+注：ADTS 是 AAC 音频的传输流格式
+
+### 自定义ffmpeg_path
+
+可能有一些用户会想要自定义全局 ffmpeg 的路径
+你可以使用以下方法解决:
+
+```python
+from graiax import silkcoder
+silkcoder.set_ffmpeg_path("./ffmpeg")
+```
+
+### 是 `ffmpeg` 还是 `libsndfile`
+
+在该项目最开始的时候，就有人吐槽过：为了简简单单的音频转换去下载一个大的离谱的 ffmpeg，这也太麻了吧。  
+（注：虽然说 ffmpeg 可以通过 disable 一大堆不必要视频/滤镜库来达到减小体积的目的，但是这需要自己编译，对小白挺不友好的）
+
+所以，从 0.3.0 开始，开始增加了通过 libsndfile 来使用解析音频。
+
+> libsndfile 是一款广泛用于读写音频文件的C语言库，
+他支持包括 flac, ogg, opus, mp3<sup>[[1]](#注)</sup>等多种格式。
+
+注：在同时可以使用 `ffmpeg` 和 `libsndfile` 的情况下， `graiax-silkcoder` 会优先使用 `ffmpeg` 进行转码
+
+<details>
+
+### ImportError：DLL load failed while importing _silkv3：找不到指定的模块（0.4.0-）
+
+相关issue: #23
+
+> [!NOTE] 注意
+> 0.4.0+ 又将 C++ 部分给删除了，所以 0.4.0+ 不会遇到相关问题
+
+因为在 0.2.x~0.3.x 都是用了 C++ 标准库里的东西，所以没安装的会出现这个 Error  
+如果遇到这种问题，请在[这里](https://aka.ms/vs/17/release/vc_redist.x64.exe)下载最新版本的 **C++ Redistributable**  
+~~我去除了大部分的 C++ 的代码，但是我保留了一部分，才让你知道，才知道你用的，是 C++~~
+
+</details>
 
 ## 注
 
