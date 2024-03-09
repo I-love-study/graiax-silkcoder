@@ -190,6 +190,9 @@ from graiax import silkcoder
 silkcoder.set_ffmpeg_path("./ffmpeg")
 ```
 
+如果你并不想全局设置，而是在某一个地方用专门的 ffmpeg，  
+可以直接通过 `ffmpeg_path` 参数设置
+
 ### 是 `ffmpeg` 还是 `libsndfile`
 
 在该项目最开始的时候，就有人吐槽过：为了简简单单的音频转换去下载一个大的离谱的 ffmpeg，这也太麻了吧。  

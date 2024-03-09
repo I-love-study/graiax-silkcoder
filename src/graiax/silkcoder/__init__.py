@@ -20,7 +20,7 @@ filelike = Union[os.PathLike, str, BytesIO]
 encode_priority = [Codec.wave, Codec.libsndfile, Codec.ffmpeg]
 decode_priority = [Codec.wave, Codec.libsndfile, Codec.ffmpeg]
 
-maximum_samplerate = [8000, 16000, 24000]
+maximum_samplerates = [8000, 16000, 24000]
 coder_samplerate = [8000, 16000, 24000, 32000, 44100, 48000]
 
 
@@ -28,11 +28,24 @@ class Encoder:
 
     def __init__(self,
                  middle_samplerate: int = 24000,
-                 codec: Codec | None = None,
+                 maximum_samplerate: int = 24000,
+                 codec: Optional[Codec] = None,
                  priority: list[Codec] = encode_priority,
                  tencent: bool = True,
                  ios_adaptive: bool = False,
-                 ffmpeg_path: str | None = None) -> None:
+                 ffmpeg_path: Optional[str] = None) -> None:
+        """
+        初始化
+
+        Args:
+            middle_samplerate(int) 中间件码率，可以是 [8000, 16000, 24000, 32000, 44100, 48000], 推荐与 maximum_samplerate 一致
+            maximum_samplerate(int) 输出 silk 音频最大采样率，可以是 [8000, 16000, 24000]
+            codec(Codec) 编码器，默认状态下会让程序自行判断
+            priority(list[Codec]) 编码器测试顺序，默认 [wave, libsndfile, ffmpeg]
+            tencent(bool) 是否适配腾讯，默认为 True
+            ios_adaptive(bool) 是否做最大程度适配，默认为 False
+            ffmpeg_path(Optional[str]) ffmpeg路径，设置此项时会覆盖默认路径
+        """
         if middle_samplerate not in coder_samplerate:
             raise ValueError(
                 f"Unsupport middle samplerate: {middle_samplerate}")
@@ -72,6 +85,16 @@ class Encoder:
                ss: float = 0,
                t: float = -1,
                **kwargs) -> Optional[bytes]:
+        """
+        编码
+
+        Args:
+            input_voice(filelike | bytes) 输入文件，可为路径，BytesIO，bytes
+            output_voice(filelike | None) 输出文件(silk)，默认为None，为None时将返回bytes
+            rate(int) 码率，单位bps，默认为 -1(不限制)
+            ss(float) 开始读取时间,对应 ffmpeg 中的ss (只能精确到秒) 默认为0(如t为0则忽略)
+            t(float) 持续读取时间,对应 ffmpeg 中的 t (只能精确到秒) 默认为0(不剪切)
+        """
         input_bytes = input_transform(input_voice)
         codec = self.choose_encoder(
             input_bytes) if self.codec is None else self.codec
@@ -95,6 +118,16 @@ class Encoder:
                            ss: float = 0,
                            t: float = -1,
                            **kwargs) -> Optional[bytes]:
+        """
+        编码
+
+        Args:
+            input_voice(filelike | bytes) 输入文件，可为路径，BytesIO，bytes
+            output_voice(filelike | None) 输出文件(silk)，默认为None，为None时将返回bytes
+            rate(int) 码率，单位bps，默认为 -1(不限制)
+            ss(float) 开始读取时间,对应 ffmpeg 中的ss (只能精确到秒) 默认为0(如t为0则忽略)
+            t(float) 持续读取时间,对应 ffmpeg 中的 t (只能精确到秒) 默认为0(不剪切)
+        """
         input_bytes = input_transform(input_voice)
         codec = self.choose_encoder(
             input_bytes) if self.codec is None else self.codec
@@ -123,9 +156,18 @@ class Decoder:
                  codec: Codec | None = None,
                  priority: list[Codec] = decode_priority,
                  ffmpeg_path: str | None = None) -> None:
+        """
+        初始化
+
+        Args:
+            samplerate(int) 输出采样率，可以是 [8000, 16000, 24000]
+            codec(Codec) 编码器，默认状态下会让程序自行判断
+            priority(list[Codec]) 编码器测试顺序，默认 [wave, libsndfile, ffmpeg]
+            ffmpeg_path(Optional[str]) ffmpeg路径，设置此项时会覆盖默认路径
+        """
         if samplerate not in coder_samplerate:
             raise ValueError(
-                f"Unsupport samplerate: {maximum_samplerate}")
+                f"Unsupport samplerate: {samplerate}")
         self.samplerate = samplerate
 
         self.codec = codec
@@ -156,6 +198,14 @@ class Decoder:
                            output_voice: Union[filelike, None] = None,
                            audio_format: Optional[str] = None,
                            **kwargs) -> Optional[bytes]:
+        """
+        编码
+
+        Args:
+            input_voice(filelike | bytes) 输入文件，可为路径，BytesIO，bytes
+            output_voice(filelike | None) 输出文件(silk)，默认为None，为None时将返回bytes
+            audio_format(str | None) 音频格式，默认为 None
+        """
         input_bytes = input_transform(input_voice)
 
         if audio_format is None:
