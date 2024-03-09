@@ -23,13 +23,17 @@ def set_ffmpeg_path(path: Union[os.PathLike, str]):
 
 
 def get_ffmpeg_encode_cmd(
-        audio_format: Optional[str], ss: float, t: float,
+        audio_format: Optional[str],
+        ss: float,
+        t: float,
         output_samplerate: int,
-        ffmpeg_para: Optional[List[str]]) -> list[str]:
-    if ffmpeg_coder is None:
+        ffmpeg_para: Optional[List[str]],
+        ffmpeg_path: Optional[str] = None,
+        ffmpeg_soxr_support: Optional[bool] = None) -> list[str]:
+    if ffmpeg_path is None and ffmpeg_coder is None:
         raise FileNotFoundError(
             "Where's your ffmpeg? Read README.md again plz.")
-    cmd: list[str] = [ffmpeg_coder]  # type: ignore
+    cmd: list[str] = [ffmpeg_path or ffmpeg_coder]  # type: ignore
     if audio_format is not None: cmd += ['-f', audio_format]
 
     input_cmd = ["-read_ahead_limit", "-1", "-i", "cache:pipe:0"]
@@ -40,7 +44,9 @@ def get_ffmpeg_encode_cmd(
         str(round(t, 3))
     ] if t > 0 else input_cmd
     if ffmpeg_para: cmd += ffmpeg_para
-    if soxr: cmd += ['-af', 'aresample=resampler=soxr']
+    if (ffmpeg_path is None and soxr) or (ffmpeg_path is not None
+                                          and ffmpeg_soxr_support):
+        cmd += ['-af', 'aresample=resampler=soxr']
     cmd += [
         '-ar',
         str(output_samplerate), '-ac', '1', '-y', '-vn', '-loglevel',
@@ -54,9 +60,12 @@ def ffmpeg_encode(data: bytes,
                   t: float = -1,
                   output_samplerate: int = 24000,
                   audio_format: Optional[str] = None,
-                  ffmpeg_para: Optional[List[str]] = None):
+                  ffmpeg_para: Optional[List[str]] = None,
+                  ffmpeg_path: Optional[str] = None,
+                  ffmpeg_soxr_support: Optional[bool] = None):
     cmd = get_ffmpeg_encode_cmd(audio_format, ss, t,
-                                output_samplerate, ffmpeg_para)
+                                output_samplerate, ffmpeg_para,
+                                ffmpeg_path, ffmpeg_soxr_support)
     try:
         shell = subprocess.Popen(cmd,
                                  stdin=PIPE,
