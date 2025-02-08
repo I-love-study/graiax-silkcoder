@@ -11,9 +11,6 @@ except (ImportError, OSError):
     soundfile = None
     soxr = None
 
-VBR_ENCODING_QUALITY = 0x1300
-COMPRESSION_LEVEL = 0x1301
-
 def sndfile_encode(data: bytes,
                    ss: float = 0,
                    t: float = -1,
@@ -44,12 +41,10 @@ def sndfile_encode(data: bytes,
 def sndfile_decode(data: bytes,
                    audio_format: str,
                    subtype: Optional[str] = None,
-                   quality: Optional[float] = None,
+                   compress_level: Optional[float] = None,
                    metadata: Optional[Dict[str, str]] = None):
     if soundfile is None or soxr is None:
         raise ImportError("Do not have soundfile")
-    if quality is not None and not (0 <= quality <= 1):
-        raise ValueError("vbr should between 0 and 1")
     pcm, samplerate = soundfile.read(BytesIO(data),
                                      samplerate=24000,
                                      channels=1,
@@ -60,20 +55,11 @@ def sndfile_decode(data: bytes,
                              samplerate=samplerate,
                              channels=1,
                              format=audio_format,
-                             subtype=subtype) as f:
+                             subtype=subtype,
+                             compression_level=compress_level) as f:
         if metadata:
             for k, v in metadata.items():
                 setattr(f, k, v)
-        if quality is not None:
-            q = soundfile._ffi.new("double*", quality)
-            ret = soundfile._snd.sf_command(
-                f._file, COMPRESSION_LEVEL if audio_format
-                == "flac" else VBR_ENCODING_QUALITY, q,
-                soundfile._ffi.sizeof(q))
-            if ret == soundfile._snd.SF_FALSE:
-                err = soundfile._snd.sf_error(f._file)
-                raise OSError(err,
-                              "Error setting quality for the file")
         f.write(pcm)
     return b.getvalue()
 

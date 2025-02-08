@@ -16,8 +16,8 @@ license = {text = "BSD-3-Clause"}
 
 [project.optional-dependencies]
 # python-soxr 在 0.3.0a2 后才支持 nogil
-# soundfile 0.11.0 支持 mp3 格式
-libsndfile = ["soundfile >= 0.11.0", "soxr >= 0.3.0a2"]
+# soundfile 0.13.0 支持 compression_level
+libsndfile = ["soundfile >= 0.13.0", "soxr >= 0.3.0a2"]
 ffmpeg = ["imageio-ffmpeg"]
 
 [project.urls]
@@ -35,13 +35,9 @@ test = ["librosa"]
 setup-script = "build.py"
 run-setuptools = true
 
-[tool.cibuildwheel]
-# PyPy，不行
-skip = "pp*"
-
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]
 
 [build-system]
-requires = ["pdm-pep517", "setuptools"]
+requires = ["pdm-pep517", "setuptools", "cffi"]
 build-backend = "pdm.pep517.api"
