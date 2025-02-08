@@ -389,6 +389,10 @@ class SilkDecoder:
         if output_stream is None:
             return self.async_decode_stream_iter(input_stream)
         else:
+            if (not asyncio.iscoroutinefunction(input_stream.read)
+                    and not asyncio.iscoroutinefunction(output_stream.write)):
+                return asyncio.to_thread(self.decode_stream, input_stream,
+                                         output_stream)
 
             async def _coro():
                 async for chunk in self.async_decode_stream_iter(input_stream):
