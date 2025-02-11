@@ -2,8 +2,6 @@ import asyncio
 import struct
 from io import BytesIO
 from typing import Any, AsyncGenerator, Callable, Generator, TypeVar, overload, Coroutine
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 from ._silkv3 import ffi, lib  # type: ignore
 
 try:
@@ -297,6 +295,7 @@ class SilkDecoder:
         self.buf = lib.PyMem_Malloc(self.frame_size)
         if self.buf == ffi.NULL:
             raise MemoryError
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if getattr(self, "dec", None) is not None:
