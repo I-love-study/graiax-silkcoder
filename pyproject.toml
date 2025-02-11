@@ -11,14 +11,14 @@ dependencies = [
     "audioooooooooooooops; python_version >= '3.13'"
 ]
 readme = "README.md"
-requires-python = ">=3.9, <=3.13"
+requires-python = ">=3.10, <=3.13"
 license = {text = "BSD-3-Clause"}
 
 [project.optional-dependencies]
 # python-soxr 在 0.3.0a2 后才支持 nogil
 # soundfile 0.13.0 支持 compression_level
 libsndfile = ["soundfile >= 0.13.0", "soxr >= 0.3.0a2"]
-ffmpeg = ["imageio-ffmpeg"]
+ffmpeg = ["imageio-ffmpeg >= 0.5.0"]
 
 [project.urls]
 repository = "https://github.com/I-love-study/graiax-silkcoder"
@@ -29,11 +29,18 @@ includes = ["src/graiax"]
 source-includes = ["src/c_silkv3"]
 
 [tool.pdm.dev-dependencies]
-test = ["librosa"]
+# librosa 0.11.0 等发版
+test = ["librosa", "pytest"]
 
 [tool.pdm.build]
 setup-script = "build.py"
 run-setuptools = true
+
+[tool.pytest.ini_options]
+addopts = "-ra -q"
+filterwarnings = ["ignore:'audioop' is deprecated:DeprecationWarning"]
+minversion = "8.0"
+testpaths = ["tests"]
 
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]
