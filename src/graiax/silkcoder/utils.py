@@ -6,7 +6,7 @@ from io import BytesIO
 from enum import Enum
 from pathlib import Path
 from shutil import which
-from typing import Union, Optional, Sequence
+from typing import Union, Optional
 from functools import wraps
 import asyncio
 
@@ -154,9 +154,6 @@ def sync_to_async(sync_func):
 
     @wraps(sync_func)
     async def async_wrapper(*args, **kwargs):
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(
-            None, lambda: sync_func(*args, **kwargs))
-        return result
+        return await asyncio.to_thread(sync_func, *args, **kwargs)
 
     return async_wrapper

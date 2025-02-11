@@ -1,26 +1,32 @@
-import audioop
+try:
+    import audioop
+except ImportError:
+    audioop = None
 import wave
 from io import BytesIO
-from typing import Union
 
 
-def wav_encode(data: bytes, ss: float = 0, t: float = -1, output_samplerate: int = 24000):
+def wav_encode(data: bytes,
+               ss: float = 0,
+               t: float = -1,
+               output_samplerate: int = 24000):
 
     with wave.open(BytesIO(data), 'rb') as wav:
         para = wav.getparams()
 
         rate_trans = lambda x: int(x * para.framerate)
-        wav_data = (wav.readframes(rate_trans(ss +
-                                              t))[rate_trans(ss):]
+        wav_data = (wav.readframes(rate_trans(ss + t))[rate_trans(ss):]
                     if t > 0 else wav.readframes(wav.getnframes()))
 
+        if (para.nchannels != 1 and para.framerate != output_samplerate
+                and para.sampwidth != 2 and audioop is None):
+            raise ValueError("Wav file cannot be convert because there's no audioop on your python.")
+
         if para.nchannels != 1:
-            wav_data = audioop.tomono(wav_data, para.sampwidth, 0.5,
-                                      0.5)
+            wav_data = audioop.tomono(wav_data, para.sampwidth, 0.5, 0.5)
         if para.framerate != output_samplerate:
-            wav_data = audioop.ratecv(wav_data, para.sampwidth,
-                                      para.nchannels, para.framerate,
-                                      output_samplerate, None)[0]
+            wav_data = audioop.ratecv(wav_data, para.sampwidth, para.nchannels,
+                                      para.framerate, output_samplerate, None)[0]
         if para.sampwidth != 2:
             wav_data = audioop.lin2lin(wav_data, para.sampwidth, 2)
             if para.sampwidth == 1:
