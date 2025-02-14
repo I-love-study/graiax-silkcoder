@@ -6,8 +6,7 @@ from io import BytesIO
 from enum import Enum
 from pathlib import Path
 from shutil import which
-from typing import Union, Optional
-from functools import wraps
+from typing import Any, Callable, Coroutine, TypeVar, overload
 import asyncio
 
 try:
@@ -41,15 +40,12 @@ class Codec(ArgTypeMixin, Enum):
     libsndfile = 2
 
 
-
-
 class CoderError(Exception):
     """所有编码/解码的错误"""
     pass
 
 
-def input_transform(
-        input_: Union[os.PathLike, str, BytesIO, bytes]) -> bytes:
+def input_transform(input_: os.PathLike | str | BytesIO | bytes) -> bytes:
     if isinstance(input_, (os.PathLike, str)):
         return Path(input_).read_bytes()
     elif isinstance(input_, BytesIO):
@@ -60,8 +56,8 @@ def input_transform(
         raise ValueError("Unsupport format")
 
 
-def output_transform(output_: Union[os.PathLike, str, BytesIO, None],
-                     data: bytes) -> Optional[bytes]:
+def output_transform(output_: os.PathLike | str | BytesIO | bytes,
+                     data: bytes) -> bytes | None:
     if isinstance(output_, (os.PathLike, str)):
         Path(output_).write_bytes(data)
     elif isinstance(output_, BytesIO):
@@ -87,7 +83,7 @@ def issilk(data: bytes):
     return f == b"#!SILK_V3"
 
 
-def is_libsndfile_supported(data: Union[bytes, str]):
+def is_libsndfile_supported(data: bytes | str):
     """判断是否被当前libsndfile所支持
     当传入 bytes 的时候，判断是否能被 libsndfile 解析
     当传入 str 的时候，判断该字符串是否在 available_formats 中"""
@@ -127,7 +123,7 @@ def get_ffmpeg():
         Warning("Couldn't find ffmpeg, maybe it'll not work")
 
 
-def play_audio(source: Union[str, bytes]):
+def play_audio(source: str | bytes):
     if sys.platform != "win32":
         raise WindowsError("Only support Windows")
 
@@ -138,22 +134,30 @@ def play_audio(source: Union[str, bytes]):
 
     p = multiprocessing.Process(
         target=winsound.PlaySound,
-        args=(source, winsound.SND_FILENAME if isinstance(
-            source, str) else winsound.SND_MEMORY),
+        args=(source, winsound.SND_FILENAME
+              if isinstance(source, str) else winsound.SND_MEMORY),
     )
     p.start()
     print("请按'q'中断")
-    while p.is_alive() and not (msvcrt.kbhit()
-                                and msvcrt.getch() in b"qQ"):
+    while p.is_alive() and not (msvcrt.kbhit() and msvcrt.getch() in b"qQ"):
         time.sleep(0.1)
     p.terminate()
     p.join()
 
 
-def sync_to_async(sync_func):
 
-    @wraps(sync_func)
-    async def async_wrapper(*args, **kwargs):
-        return await asyncio.to_thread(sync_func, *args, **kwargs)
+T = TypeVar("T")
+@overload
+async def async_func(func: Callable[...,  Coroutine[Any, Any, T]], *args: Any, **kwargs: Any) -> T:
+    ...
 
-    return async_wrapper
+@overload
+async def async_func(func: Callable[...,  T], *args: Any, **kwargs: Any) -> T:
+    ...
+
+async def async_func(func, *args, **kwargs):
+    if asyncio.iscoroutinefunction(func):
+        return await func(*args, **kwargs)
+    else:
+        return func(*args, **kwargs)
+

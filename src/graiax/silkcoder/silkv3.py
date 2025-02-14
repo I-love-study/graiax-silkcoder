@@ -1,15 +1,16 @@
 import asyncio
 import struct
 from io import BytesIO
-from typing import Any, AsyncGenerator, Callable, Generator, TypeVar, overload, Coroutine
+from math import floor
+from typing import Any, AsyncGenerator, Generator, overload, Coroutine
 from ._silkv3 import ffi, lib  # type: ignore
+from .utils import async_func
+from .typing import Reader, Writer, AsyncReader, AsyncWriter, DataBuffer
 
 try:
     import numpy as np
 except ImportError:
     np = None
-
-T = TypeVar("T")
 
 
 class SilkError(Exception):
@@ -71,37 +72,35 @@ def to_i16_le(input: bytes) -> int:
     return data
 
 
-async def async_func(func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
-    if asyncio.iscoroutinefunction(func):
-        return await func(*args, **kwargs)
-    else:
-        return func(*args, **kwargs)
-
-
 class SilkEncoder:
 
     def __init__(self,
                  input_samplerate: int,
                  output_samplerate: int,
-                 bitrate: int,
+                 bitrate: int | None = None,
                  packet_loss_percentage: int = 0,
                  complexity: int = 2,
                  use_inband_fec: bool = False,
                  use_dtx: bool = False,
                  tencent: bool = True,
-                 ios_adaptive: bool = True):
+                 ios_adaptive: bool = True,
+                 auto_bitrate: bool = True):
 
-        if ios_adaptive and bitrate > 24000:
-            bitrate = 24000
+        self.ios_adaptve = ios_adaptive
+        self.auto_bitrate = auto_bitrate
+        self.bitrate = bitrate
         self.enc_control = ffi.new("SKP_SILK_SDK_EncControlStruct *")
         self.enc_control.API_sampleRate = input_samplerate
         self.enc_control.maxInternalSampleRate = output_samplerate
         self.enc_control.packetSize = (20 * input_samplerate) // 1000
-        self.enc_control.bitRate = bitrate
         self.enc_control.packetLossPercentage = packet_loss_percentage
         self.enc_control.complexity = complexity
         self.enc_control.useInBandFEC = use_inband_fec
         self.enc_control.useDTX = use_dtx
+        if bitrate is None:
+            self.enc_control.bitRate = 24000 if self.ios_adaptve else 100000
+        else:
+            self.enc_control.bitRate = bitrate
 
         self.enc_status = ffi.new("SKP_SILK_SDK_EncControlStruct *")
         self.enc_status.API_sampleRate = 0
@@ -139,7 +138,16 @@ class SilkEncoder:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await asyncio.to_thread(self.__exit__, exc_type, exc_val, exc_tb)
 
+    def set_calc_max_bitrate(self, seconds: float):
+        maximum_bps = 24000 if self.ios_adaptve else 100000
+        self.enc_control.bitRate = min(floor(980 * 1024 / seconds / 8), maximum_bps)
+
+    def set_calc_max_bitrate_from_bytes(self, input_bytes: bytes):
+        return self.set_calc_max_bitrate(len(input_bytes) / 24000 / 2)
+
     def encode(self, input_bytes: bytes):
+        if self.auto_bitrate and self.bitrate is None:
+            self.set_calc_max_bitrate_from_bytes(input_bytes)
         input_stream = BytesIO(input_bytes)
         output_stream = BytesIO()
         self.encode_stream(input_stream, output_stream)
@@ -152,23 +160,28 @@ class SilkEncoder:
         return output_stream.getvalue()
 
     @overload
-    def encode_stream(self, input_stream) -> Generator[bytes, None, None]:
+    def encode_stream(self,
+                      input_stream: Reader[DataBuffer]) -> Generator[bytes, None, None]:
         ...
 
     @overload
-    def encode_stream(self, input_stream, output_stream) -> None:
+    def encode_stream(self, input_stream: Reader[DataBuffer],
+                      output_stream: Writer[bytes]) -> None:
         ...
 
-    def encode_stream(self,
-                      input_stream,
-                      output_stream=None) -> Generator[bytes, None, None] | None:
+    def encode_stream(
+        self,
+        input_stream: Reader[DataBuffer],
+        output_stream: Writer[bytes] | None = None
+    ) -> Generator[bytes, None, None] | None:
         if output_stream is None:
             return self.encode_stream_iter(input_stream)
 
         for chunk in self.encode_stream_iter(input_stream):
             output_stream.write(chunk)
 
-    def encode_stream_iter(self, input_stream) -> Generator[bytes, None, None]:
+    def encode_stream_iter(
+            self, input_stream: Reader[DataBuffer]) -> Generator[bytes, None, None]:
         # Header
         if self.tencent:
             yield b"\x02"
@@ -195,17 +208,21 @@ class SilkEncoder:
             yield payload_
 
     @overload
-    async def async_encode_stream(self, input_stream) -> AsyncGenerator[bytes, None]:
+    async def async_encode_stream(
+        self, input_stream: AsyncReader[DataBuffer] | Reader[DataBuffer]
+    ) -> AsyncGenerator[bytes, None]:
         ...
 
     @overload
-    async def async_encode_stream(self, input_stream, output_stream) -> None:
+    async def async_encode_stream(
+            self, input_stream: AsyncReader[DataBuffer] | Reader[DataBuffer],
+            output_stream: AsyncWriter[bytes] | Writer[bytes]) -> None:
         ...
 
     def async_encode_stream(
-            self,
-            input_stream,
-            output_stream=None
+        self,
+        input_stream: AsyncReader[DataBuffer] | Reader[DataBuffer],
+        output_stream: AsyncWriter[bytes] | Writer[bytes] | None = None
     ) -> AsyncGenerator[bytes, None] | Coroutine[Any, Any, None]:
         if output_stream is None:
             return self.async_encode_stream_iter(input_stream)
@@ -221,8 +238,9 @@ class SilkEncoder:
 
             return _coro()
 
-    async def async_encode_stream_iter(self,
-                                       input_stream) -> AsyncGenerator[bytes, None]:
+    async def async_encode_stream_iter(
+        self, input_stream: AsyncReader[DataBuffer] | Reader[DataBuffer]
+    ) -> AsyncGenerator[bytes, None]:
         """因为线程切换问题导致他效率非常低"""
         # Header
         if self.tencent:
@@ -309,36 +327,40 @@ class SilkDecoder:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await asyncio.to_thread(self.__exit__, exc_type, exc_val, exc_tb)
 
-    def decode(self, input_bytes):
+    def decode(self, input_bytes: bytes):
         input_stream = BytesIO(input_bytes)
         output_stream = BytesIO()
         self.decode_stream(input_stream, output_stream)
         return output_stream.getvalue()
-    
-    async def async_decode(self, input_bytes):
+
+    async def async_decode(self, input_bytes: bytes):
         input_stream = BytesIO(input_bytes)
         output_stream = BytesIO()
         await asyncio.to_thread(self.decode_stream, input_stream, output_stream)
         return output_stream.getvalue()
 
     @overload
-    def decode_stream(self, input_stream) -> Generator[bytes, None, None]:
+    def decode_stream(self,
+                      input_stream: Reader[bytes]) -> Generator[bytes, None, None]:
         ...
 
     @overload
-    def decode_stream(self, input_stream, output_stream) -> None:
+    def decode_stream(self, input_stream: Reader[bytes],
+                      output_stream: Writer[bytes]) -> None:
         ...
 
     def decode_stream(self,
-                      input_stream,
-                      output_stream=None) -> Generator[bytes, None, None] | None:
+                      input_stream: Reader[bytes],
+                      output_stream: Writer[bytes] | None = None
+                      ) -> Generator[bytes, None, None] | None:
         if output_stream is None:
             return self.decode_stream_iter(input_stream)
 
         for i in self.decode_stream_iter(input_stream):
             output_stream.write(i)
 
-    def decode_stream_iter(self, input_stream) -> Generator[bytes, None, None]:
+    def decode_stream_iter(self,
+                           input_stream: Reader[bytes]) -> Generator[bytes, None, None]:
         chunk = input_stream.read(9)
         if np is not None and isinstance(chunk, np.ndarray):
             chunk = chunk.tobytes()
@@ -373,16 +395,18 @@ class SilkDecoder:
             yield unpack_bytes
 
     @overload
-    async def async_decode_stream(self, input_stream) -> AsyncGenerator[bytes, None]:
+    async def async_decode_stream(
+            self, input_stream: AsyncReader[bytes]) -> AsyncGenerator[bytes, None]:
         ...
 
     @overload
-    async def async_decode_stream(self, input_stream, output_stream) -> None:
+    async def async_decode_stream(self, input_stream: AsyncReader[bytes],
+                                  output_stream) -> None:
         ...
 
     def async_decode_stream(
             self,
-            input_stream,
+            input_stream: AsyncReader[bytes],
             output_stream=None
     ) -> AsyncGenerator[bytes, None] | Coroutine[Any, Any, None]:
         if output_stream is None:
@@ -399,8 +423,8 @@ class SilkDecoder:
 
             return _coro()
 
-    async def async_decode_stream_iter(self,
-                                       input_stream) -> AsyncGenerator[bytes, None]:
+    async def async_decode_stream_iter(
+            self, input_stream: AsyncReader[bytes]) -> AsyncGenerator[bytes, None]:
         """因为线程切换问题导致他效率非常低"""
         chunk = await async_func(input_stream.read, 9)
         if np is not None and isinstance(chunk, np.ndarray):
@@ -428,7 +452,7 @@ class SilkDecoder:
                 n_bytes[0] = lib.swap_i16(n_bytes[0])
             if n_bytes[0] > self.frame_size:
                 raise SilkError("INVALID")
-            chunk = input_stream.read(n_bytes[0])
+            chunk = await async_func(input_stream.read, n_bytes[0])
             if len(chunk) < n_bytes[0]:  # not enough data
                 raise SilkError("INVALID")
             c_chunk = ffi.from_buffer("uint8_t[]", chunk)
