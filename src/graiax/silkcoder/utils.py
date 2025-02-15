@@ -1,13 +1,20 @@
+import asyncio
 import os
 import subprocess
 import sys
 import wave
-from io import BytesIO
 from enum import Enum
+from io import BytesIO
 from pathlib import Path
 from shutil import which
-from typing import Any, Callable, Coroutine, TypeVar, overload
-import asyncio
+from typing import Any, Callable, Coroutine, ParamSpec, TypeVar, overload
+
+if sys.version_info >= (3, 13):
+    from typing import TypeIs
+else:
+    from typing_extensions import TypeIs
+
+from .typing import AsyncReader, AsyncWriter, Reader, Writer
 
 try:
     import imageio_ffmpeg
@@ -127,10 +134,10 @@ def play_audio(source: str | bytes):
     if sys.platform != "win32":
         raise WindowsError("Only support Windows")
 
-    import winsound
     import msvcrt
     import multiprocessing
     import time
+    import winsound
 
     p = multiprocessing.Process(
         target=winsound.PlaySound,
@@ -145,14 +152,22 @@ def play_audio(source: str | bytes):
     p.join()
 
 
+P = ParamSpec("P")
+R = TypeVar("R")
 
-T = TypeVar("T")
 @overload
-async def async_func(func: Callable[...,  Coroutine[Any, Any, T]], *args: Any, **kwargs: Any) -> T:
+async def async_func(func: Callable[P, Coroutine[Any, Any, R]], *args: P.args,
+                     **kwargs: P.kwargs) -> R:
+    ...
+
+
+@overload
+async def async_func(func: Callable[P, R | Coroutine[Any, Any, R]], *args: P.args,
+                     **kwargs: P.kwargs) -> R:
     ...
 
 @overload
-async def async_func(func: Callable[...,  T], *args: Any, **kwargs: Any) -> T:
+async def async_func(func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
     ...
 
 async def async_func(func, *args, **kwargs):
@@ -161,3 +176,16 @@ async def async_func(func, *args, **kwargs):
     else:
         return func(*args, **kwargs)
 
+
+def is_async_function(a: object, method_name: str) -> bool:
+    method = getattr(a, method_name, None)
+    return asyncio.iscoroutinefunction(method)
+
+
+# 类型保护函数
+def is_async_reader(a: Reader | AsyncReader) -> TypeIs[AsyncReader]:
+    return is_async_function(a, "read")
+
+
+def is_async_writer(a: Writer | AsyncWriter) -> TypeIs[AsyncWriter]:
+    return is_async_function(a, "write")

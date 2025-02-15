@@ -2,10 +2,11 @@ import asyncio
 import struct
 from io import BytesIO
 from math import floor
-from typing import Any, AsyncGenerator, Generator, overload, Coroutine
-from ._silkv3 import ffi, lib  # type: ignore
-from .utils import async_func
-from .typing import Reader, Writer, AsyncReader, AsyncWriter, DataBuffer
+from typing import Any, AsyncGenerator, Coroutine, Generator, overload
+
+from ._silkv3 import ffi, lib
+from .typing import AsyncReader, AsyncWriter, DataBuffer, Reader, Writer
+from .utils import async_func, is_async_reader, is_async_writer
 
 try:
     import numpy as np
@@ -227,8 +228,7 @@ class SilkEncoder:
         if output_stream is None:
             return self.async_encode_stream_iter(input_stream)
         else:
-            if (not asyncio.iscoroutinefunction(input_stream.read)
-                    and not asyncio.iscoroutinefunction(output_stream.write)):
+            if not (is_async_reader(input_stream) or is_async_writer(output_stream)):
                 return asyncio.to_thread(self.encode_stream, input_stream,
                                          output_stream)
 
@@ -405,15 +405,14 @@ class SilkDecoder:
         ...
 
     def async_decode_stream(
-            self,
-            input_stream: AsyncReader[bytes],
-            output_stream=None
+        self,
+        input_stream: AsyncReader[bytes] | Reader[bytes],
+        output_stream: AsyncWriter[bytes] | Writer[bytes] | None = None
     ) -> AsyncGenerator[bytes, None] | Coroutine[Any, Any, None]:
         if output_stream is None:
             return self.async_decode_stream_iter(input_stream)
         else:
-            if (not asyncio.iscoroutinefunction(input_stream.read)
-                    and not asyncio.iscoroutinefunction(output_stream.write)):
+            if not (is_async_reader(input_stream) or is_async_writer(output_stream)):
                 return asyncio.to_thread(self.decode_stream, input_stream,
                                          output_stream)
 
@@ -424,7 +423,8 @@ class SilkDecoder:
             return _coro()
 
     async def async_decode_stream_iter(
-            self, input_stream: AsyncReader[bytes]) -> AsyncGenerator[bytes, None]:
+        self, input_stream: AsyncReader[bytes] | Reader[bytes]
+    ) -> AsyncGenerator[bytes, None]:
         """因为线程切换问题导致他效率非常低"""
         chunk = await async_func(input_stream.read, 9)
         if np is not None and isinstance(chunk, np.ndarray):
@@ -443,6 +443,7 @@ class SilkDecoder:
         n_bytes = ffi.new("int16_t *")
         while True:
             chunk = await async_func(input_stream.read, 2)
+            input_stream.read
             if np is not None and isinstance(chunk, np.ndarray):
                 chunk = chunk.tobytes()
             if len(chunk) < 2:
