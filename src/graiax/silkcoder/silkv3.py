@@ -227,16 +227,14 @@ class SilkEncoder:
     ) -> AsyncGenerator[bytes, None] | Coroutine[Any, Any, None]:
         if output_stream is None:
             return self.async_encode_stream_iter(input_stream)
-        else:
-            if not (is_async_reader(input_stream) or is_async_writer(output_stream)):
-                return asyncio.to_thread(self.encode_stream, input_stream,
-                                         output_stream)
+        elif not (is_async_reader(input_stream) or is_async_writer(output_stream)):
+            return asyncio.to_thread(self.encode_stream, input_stream, output_stream)
 
-            async def _coro():
-                async for chunk in self.async_encode_stream_iter(input_stream):
-                    await async_func(output_stream.write, chunk)
+        async def _coro():
+            async for chunk in self.async_encode_stream_iter(input_stream):
+                await async_func(output_stream.write, chunk)
 
-            return _coro()
+        return _coro()
 
     async def async_encode_stream_iter(
         self, input_stream: AsyncReader[DataBuffer] | Reader[DataBuffer]
@@ -411,16 +409,14 @@ class SilkDecoder:
     ) -> AsyncGenerator[bytes, None] | Coroutine[Any, Any, None]:
         if output_stream is None:
             return self.async_decode_stream_iter(input_stream)
-        else:
-            if not (is_async_reader(input_stream) or is_async_writer(output_stream)):
-                return asyncio.to_thread(self.decode_stream, input_stream,
-                                         output_stream)
+        elif not (is_async_reader(input_stream) or is_async_writer(output_stream)):
+            return asyncio.to_thread(self.decode_stream, input_stream, output_stream)
 
-            async def _coro():
-                async for chunk in self.async_decode_stream_iter(input_stream):
-                    await async_func(output_stream.write, chunk)
+        async def _coro():
+            async for chunk in self.async_decode_stream_iter(input_stream):
+                await async_func(output_stream.write, chunk)
 
-            return _coro()
+        return _coro()
 
     async def async_decode_stream_iter(
         self, input_stream: AsyncReader[bytes] | Reader[bytes]
