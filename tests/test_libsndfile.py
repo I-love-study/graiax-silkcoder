@@ -2,10 +2,9 @@ import subprocess
 from io import BytesIO
 from pathlib import Path
 
-from graiax.silkcoder.libsndfile import sndfile_encode_stream
+from graiax.silkcoder.libsndfile import SndfileEncoder, SndfileDecode
 from graiax.silkcoder.utils import get_ffmpeg
-from graiax.silkcoder.silkv3 import SilkDecoder
-from utils import get_similarity, package_pcm
+from utils import get_similarity
 
 resource_path = Path("tests/data/")
 tmp_path = resource_path / "tmp"
@@ -30,19 +29,27 @@ def teardown_module():
     tmp_path.rmdir()
 
 
-def test_sndfile_encode():
+def test_sndfile_encode_decode():
     silk = BytesIO()
     flac_file = tmp_path / "test.flac"
-    sndfile_encode_stream(flac_file, silk, ios_adaptive=False)
+    SndfileEncoder(ios_adaptive=False).encode_stream(flac_file, silk)
     silk.seek(0)
-    pcm2 = BytesIO()
-    with SilkDecoder(24000) as decoder:
-        decoder.decode_stream(silk, pcm2)
+    flac_2 = BytesIO()
+    flac_2.name = "test.flac" # 通过 name 来让 soundfile 理解 编码目标
+    SndfileDecode().decode_stream(silk, flac_2)
+    flac_2.seek(0)
+    similarity = get_similarity(original_audio, flac_2)
+    assert similarity > 0.97
 
-    package_pcm(pcm2.getvalue(), wav2 := BytesIO(), 1, 2, 24000)
-
-    wav2.seek(0)
-
-    similarity = get_similarity(original_audio, wav2)
-    print(similarity)
+def test_sndfile_ios_adaptive():
+    silk = BytesIO()
+    flac_file = tmp_path / "test.flac"
+    SndfileEncoder(ios_adaptive=True).encode_stream(flac_file, silk)
+    silk.seek(0)
+    flac_2 = BytesIO()
+    flac_2.name = "test.flac" # 通过 name 来让 soundfile 理解 编码目标
+    SndfileDecode().decode_stream(silk, flac_2)
+    flac_2.seek(0)
+    similarity = get_similarity(original_audio, flac_2)
     assert similarity > 0.87
+

@@ -39,5 +39,5 @@ def get_similarity(a1, a2):
     mfcc2 = np.reshape(mfcc2, (1, -1))
 
     similarity = (np.inner(mfcc1, mfcc2) /
-                  (np.linalg.norm(mfcc1) * np.linalg.norm(mfcc2)))[0][0]  # type: ignore
+                  (np.linalg.norm(mfcc1) * np.linalg.norm(mfcc2)))[0][0]
     return similarity

@@ -5,13 +5,8 @@ from math import floor
 from typing import Any, AsyncGenerator, Coroutine, Generator, overload
 
 from ._silkv3 import ffi, lib
-from .typing import AsyncReader, AsyncWriter, DataBuffer, Reader, Writer
+from .typing import AsyncReader, AsyncWriter, Reader, Writer
 from .utils import async_func, is_async_reader, is_async_writer
-
-try:
-    import numpy as np
-except ImportError:
-    np = None
 
 
 class SilkError(Exception):
@@ -162,27 +157,26 @@ class SilkEncoder:
 
     @overload
     def encode_stream(self,
-                      input_stream: Reader[DataBuffer]) -> Generator[bytes, None, None]:
+                      input_stream: Reader[bytes]) -> Generator[bytes, None, None]:
         ...
 
     @overload
-    def encode_stream(self, input_stream: Reader[DataBuffer],
+    def encode_stream(self, input_stream: Reader[bytes],
                       output_stream: Writer[bytes]) -> None:
         ...
 
-    def encode_stream(
-        self,
-        input_stream: Reader[DataBuffer],
-        output_stream: Writer[bytes] | None = None
-    ) -> Generator[bytes, None, None] | None:
+    def encode_stream(self,
+                      input_stream: Reader[bytes],
+                      output_stream: Writer[bytes] | None = None
+                      ) -> Generator[bytes, None, None] | None:
         if output_stream is None:
             return self.encode_stream_iter(input_stream)
 
         for chunk in self.encode_stream_iter(input_stream):
             output_stream.write(chunk)
 
-    def encode_stream_iter(
-            self, input_stream: Reader[DataBuffer]) -> Generator[bytes, None, None]:
+    def encode_stream_iter(self,
+                           input_stream: Reader[bytes]) -> Generator[bytes, None, None]:
         # Header
         if self.tencent:
             yield b"\x02"
@@ -193,8 +187,6 @@ class SilkEncoder:
         payload = ffi.new("uint8_t[1250]")
         while True:
             chunk = input_stream.read(self.frame_size)
-            if np is not None and isinstance(chunk, np.ndarray):
-                chunk = chunk.tobytes()
             if not isinstance(chunk, bytes):
                 raise TypeError(
                     f"input must be a file-like rb object, got {type(input).__name__}")
@@ -210,19 +202,19 @@ class SilkEncoder:
 
     @overload
     async def async_encode_stream(
-        self, input_stream: AsyncReader[DataBuffer] | Reader[DataBuffer]
+        self, input_stream: AsyncReader[bytes] | Reader[bytes]
     ) -> AsyncGenerator[bytes, None]:
         ...
 
     @overload
     async def async_encode_stream(
-            self, input_stream: AsyncReader[DataBuffer] | Reader[DataBuffer],
+            self, input_stream: AsyncReader[bytes] | Reader[bytes],
             output_stream: AsyncWriter[bytes] | Writer[bytes]) -> None:
         ...
 
     def async_encode_stream(
         self,
-        input_stream: AsyncReader[DataBuffer] | Reader[DataBuffer],
+        input_stream: AsyncReader[bytes] | Reader[bytes],
         output_stream: AsyncWriter[bytes] | Writer[bytes] | None = None
     ) -> AsyncGenerator[bytes, None] | Coroutine[Any, Any, None]:
         if output_stream is None:
@@ -237,7 +229,7 @@ class SilkEncoder:
         return _coro()
 
     async def async_encode_stream_iter(
-        self, input_stream: AsyncReader[DataBuffer] | Reader[DataBuffer]
+        self, input_stream: AsyncReader[bytes] | Reader[bytes]
     ) -> AsyncGenerator[bytes, None]:
         """因为线程切换问题导致他效率非常低"""
         # Header
@@ -250,8 +242,6 @@ class SilkEncoder:
         while True:
             chunk = await async_func(input_stream.read, self.frame_size)
 
-            if np is not None and isinstance(chunk, np.ndarray):
-                chunk = chunk.tobytes()
             if not isinstance(chunk, bytes):
                 raise TypeError(
                     f"input must be a file-like rb object, got {type(input).__name__}")
@@ -360,8 +350,6 @@ class SilkDecoder:
     def decode_stream_iter(self,
                            input_stream: Reader[bytes]) -> Generator[bytes, None, None]:
         chunk = input_stream.read(9)
-        if np is not None and isinstance(chunk, np.ndarray):
-            chunk = chunk.tobytes()
         if not isinstance(chunk, bytes):
             raise TypeError(
                 f"input must be a file-like rb object, got {type(input_stream).__name__}"
@@ -376,8 +364,7 @@ class SilkDecoder:
         n_bytes = ffi.new("int16_t *")
         while True:
             chunk = input_stream.read(2)
-            if np is not None and isinstance(chunk, np.ndarray):
-                chunk = chunk.tobytes()
+
             if len(chunk) < 2:
                 break
             n_bytes[0] = bytes_to_i16(chunk)
@@ -423,8 +410,7 @@ class SilkDecoder:
     ) -> AsyncGenerator[bytes, None]:
         """因为线程切换问题导致他效率非常低"""
         chunk = await async_func(input_stream.read, 9)
-        if np is not None and isinstance(chunk, np.ndarray):
-            chunk = chunk.tobytes()
+
         if not isinstance(chunk, bytes):
             raise TypeError(
                 f"input must be a file-like rb object, got {type(input_stream).__name__}"
@@ -439,9 +425,7 @@ class SilkDecoder:
         n_bytes = ffi.new("int16_t *")
         while True:
             chunk = await async_func(input_stream.read, 2)
-            input_stream.read
-            if np is not None and isinstance(chunk, np.ndarray):
-                chunk = chunk.tobytes()
+
             if len(chunk) < 2:
                 break
             n_bytes[0] = bytes_to_i16(chunk)

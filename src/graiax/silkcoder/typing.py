@@ -2,15 +2,9 @@
 from abc import abstractmethod
 from typing import TypeVar, Protocol
 
-try:
-    import numpy as np
-    DataBuffer = TypeVar("DataBuffer", bytes, np.ndarray)
-except ImportError:
-    DataBuffer = bytes
-
-
 T = TypeVar("T", covariant=True)
 U = TypeVar("U", contravariant=True)
+
 
 class Reader(Protocol[T]):
     """Protocol for simple I/O reader instances.
@@ -26,6 +20,7 @@ class Reader(Protocol[T]):
         read.
         """
 
+
 class Writer(Protocol[U]):
     """Protocol for simple I/O writer instances.
     This protocol only supports blocking I/O.
@@ -36,6 +31,7 @@ class Writer(Protocol[U]):
     @abstractmethod
     def write(self, data: U, /) -> int:
         """Write data to the output stream and return number of items written."""
+
 
 class AsyncReader(Protocol[T]):
     """Protocol for simple I/O reader instances.
@@ -51,7 +47,10 @@ class AsyncReader(Protocol[T]):
         read.
         """
 
+
 U = TypeVar("U", contravariant=True)
+
+
 class AsyncWriter(Protocol[U]):
     """Protocol for simple I/O writer instances.
     This protocol only supports blocking I/O.

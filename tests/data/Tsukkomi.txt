@@ -1,0 +1,2 @@
+libsndfile 并不支持任何 aac 格式 (AAC-LC/HE-AACV1/HE-AACV2/xHE-AAC)
+但是这里使用 aac 格式文件存粹是作者本人喜好（是说格式，不是老八）
