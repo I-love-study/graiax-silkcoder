@@ -8,9 +8,10 @@ authors = [
 ]
 dependencies = [
     "typing-extensions >= 4.10.0; python_version < '3.13'",
+    "aiologic >= 0.14.0"
 ]
 readme = "README.md"
-requires-python = ">=3.10, <=3.13"
+requires-python = ">=3.10, <3.14"
 license = {text = "BSD-3-Clause"}
 
 [project.optional-dependencies]
@@ -22,10 +23,13 @@ ffmpeg = ["imageio-ffmpeg >= 0.5.0"]
 [project.urls]
 repository = "https://github.com/I-love-study/graiax-silkcoder"
 
-[tool.pdm]
+[tool.pdm.build]
 package-dir = "src"
 includes = ["src/graiax"]  
 source-includes = ["src/c_silkv3"]
+distribution = true
+custom-hook = "build.py"
+run-setuptools = true
 
 [tool.pdm.dev-dependencies]
 # librosa 0.11.0 有 numpy 2.0 支持
@@ -36,10 +40,6 @@ test = [
   "pytest-sugar",
   "pytest-asyncio",
 ]
-
-[tool.pdm.build]
-setup-script = "build.py"
-run-setuptools = true
 
 [tool.pytest.ini_options]
 addopts = "-ra -q"
@@ -54,5 +54,5 @@ skip = "*-musllinux_* *_i686 *-win32"
 archs = ["x86_64", "arm64"]
 
 [build-system]
-requires = ["pdm-pep517", "setuptools", "cffi"]
-build-backend = "pdm.pep517.api"
+requires = ["pdm-backend", "setuptools", "cffi"]
+build-backend = "pdm.backend"

@@ -7,7 +7,7 @@ from cffi import FFI
 
 ffibuilder = FFI()
 ffibuilder.cdef(
-    """
+"""
 typedef struct {
     /* I:   Input signal sampling rate in Hertz; 8000/12000/16000/24000                     */
     int API_sampleRate;
@@ -27,6 +27,7 @@ typedef struct {
     /* I:   Flag to enable discontinuous transmission (DTX); 0/1                            */
     int useDTX;
 } SKP_SILK_SDK_EncControlStruct;
+
 typedef struct {
     /* I:   Output signal sampling rate in Hertz; 8000/12000/16000/24000                    */
     int API_sampleRate;
@@ -39,6 +40,7 @@ typedef struct {
     /* O:   Distance between main payload and redundant payload in packets                  */
     int inBandFECOffset;
 } SKP_SILK_SDK_DecControlStruct;
+
 int32_t SKP_Silk_SDK_Get_Encoder_Size(int32_t *encSizeBytes);
 int32_t SKP_Silk_SDK_InitEncoder(void *encState, SKP_SILK_SDK_EncControlStruct *encStatus);
 int32_t SKP_Silk_SDK_Encode(void *encState,
@@ -59,31 +61,50 @@ int32_t SKP_Silk_SDK_Decode(void * decState,
 uint8_t is_le();
 int16_t swap_i16(int16_t data);
 int SHOULD_SWAP();
-void *PyMem_Malloc(size_t n);
-void PyMem_Free(void* p);
-    """
+void* PyMem_Malloc_EnsureGIL(size_t size);
+void PyMem_Free_EnsureGIL(void* p);
+"""
 )
 
 source = """
+#include <Python.h>
+
 #include "SKP_Silk_typedef.h"
 #include "SKP_Silk_SDK_API.h"
 #include "SKP_Silk_control.h"
+
 uint8_t is_le()
 {
     uint16_t data=1;
     return *(uint8_t*)&data;
 }
+
+void* PyMem_Malloc_EnsureGIL(size_t size) {
+    PyGILState_STATE state = PyGILState_Ensure();
+    void* ptr = PyMem_Malloc(size);
+    PyGILState_Release(state);
+    return ptr;
+}
+
+void PyMem_Free_EnsureGIL(void* p) {
+    PyGILState_STATE state = PyGILState_Ensure();
+    PyMem_Free(p);
+    PyGILState_Release(state);
+};
+
 #ifdef _WIN32
     #define swap_i16 _byteswap_ushort
 #else
     #define swap_i16 __builtin_bswap16
 #endif /* _WIN32 */
+
 #ifdef _SYSTEM_IS_BIG_ENDIAN
     #define SHOULD_SWAP() 1
 #else
     #define SHOULD_SWAP() 0
 #endif
 """
+
 macro_base = []
 if sys.byteorder != "little":
     macro_base.append(("_SYSTEM_IS_BIG_ENDIAN", None))
