@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 import asyncio
+from contextlib import nullcontext
 from io import BytesIO
-from os import PathLike
-from typing import Dict, AsyncGenerator, overload, Coroutine, Any, Generator
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Coroutine, Generator, overload
 
 from .silkv3 import SilkDecoder, SilkEncoder
-from .utils import AsyncReader, async_func, is_async_reader, is_async_writer
-from .typing import Reader, Writer, AsyncWriter
+from .typing import AsyncWriter, Reader, Writer
+from .utils import AsyncReader, create_async_func, is_async_reader, is_async_writer, is_reader, is_writer
+
+if TYPE_CHECKING:
+    from _typeshed import StrOrBytesPath
 
 try:
     import numpy as np
@@ -80,9 +85,6 @@ if soundfile is not None and soxr is not None:
 
 # 对于 soundfile，仅支持 read 是不够的，还需要包括 seek 等方法
 # 为了防止代码里面全是 type hint 工程，这里用 Reader 简化
-# 详细请看 Soundfile._has_virtual_io_attrs
-SndSupportedFileR = Reader[bytes] | PathLike | str | bytes | int
-SndSupportedFileW = Writer[bytes] | PathLike | str | bytes | int
 
 
 class SndfileEncoder:
@@ -91,7 +93,8 @@ class SndfileEncoder:
                  output_samplerate: int = 24000,
                  bitrate: int = 100000,
                  ss: float = 0,
-                 t: float | None = None,
+                 t: float = -1,
+                 to: float | None = None,
                  **kwargs):
 
         self.silk_encoder = SilkEncoder(input_samplerate=output_samplerate,
@@ -101,75 +104,92 @@ class SndfileEncoder:
         self.samplerate = output_samplerate
         self.ss = ss
         self.t = t
+        self.to = to
 
-    def encode(self, input_bytes: bytes):
+    def encode_bytes(self, input_bytes: bytes):
         input_stream = BytesIO(input_bytes)
         output_stream = BytesIO()
-        self.encode_stream(input_stream)
+        self.encode_stream(input_stream, output_stream)
         return output_stream.getvalue()
 
     @overload
-    def encode_stream(self,
-                      input_file: SndSupportedFileR) -> Generator[bytes, None, None]:
+    def encode_stream(
+        self, input_file: Reader[bytes] | StrOrBytesPath | int
+    ) -> Generator[bytes, None, None]:
         ...
 
     @overload
-    def encode_stream(self, input_file: SndSupportedFileR,
-                      output_stream: Writer[bytes]) -> None:
+    def encode_stream(self, input_file: Reader[bytes] | StrOrBytesPath | int,
+                      output_file: Writer[bytes] | StrOrBytesPath) -> None:
         ...
 
-    def encode_stream(self,
-                      input_file: SndSupportedFileR,
-                      output_stream: Writer[bytes] | None = None
-                      ) -> Generator[bytes, None, None] | None:
+    def encode_stream(
+        self,
+        input_file: Reader[bytes] | StrOrBytesPath | int,
+        output_file: Writer[bytes] | StrOrBytesPath | None = None
+    ) -> Generator[bytes, None, None] | None:
         stream_iter = self.encode_stream_iter(input_file)
-        if output_stream is None:
+        if output_file is None:
             return stream_iter
-        for chunk in stream_iter:
-            output_stream.write(chunk)
+        context = nullcontext(output_file) if is_writer(output_file) else open(
+            output_file, "wb")
+        with context as output_stream:
+            for chunk in stream_iter:
+                output_stream.write(chunk)
 
     def encode_stream_iter(
-            self, input_file: SndSupportedFileR) -> Generator[bytes, None, None]:
+        self, input_file: Reader[bytes] | StrOrBytesPath | int
+    ) -> Generator[bytes, None, None]:
         if soundfile is None or soxr is None:
             raise ImportError("Do not have soundfile")
 
         with SoundFileReadBytes(input_file, 'r') as f, self.silk_encoder as encoder:
-            if self.ss != 0 or self.t is not None:
-                f._prepare_read(int(self.ss * f.samplerate), int(self.t * f.samplerate),
-                                -1)
+            if self.ss != 0 or self.t > 0 or self.to is not None:
+                f._prepare_read(
+                    int(self.ss * f.samplerate), int(self.t * f.samplerate),
+                    int(self.to * f.samplerate) if self.to is not None else None)
             if self.silk_encoder.auto_bitrate and self.silk_encoder.bitrate is None:
                 self.silk_encoder.set_calc_max_bitrate(f.frames / f.samplerate)
             yield from encoder.encode_stream(f)
 
+    async def async_encode_bytes(self, input_bytes: bytes) -> bytes:
+        input_stream = BytesIO(input_bytes)
+        output_stream = BytesIO()
+        await self.async_encode_stream(input_stream, output_stream)
+        return output_stream.getvalue()
+
     @overload
     async def async_encode_stream(
-            self, input_file: SndSupportedFileR) -> AsyncGenerator[bytes, None]:
+        self, input_file: Reader[bytes] | StrOrBytesPath | int
+    ) -> AsyncGenerator[bytes, None]:
         ...
 
     @overload
     async def async_encode_stream(
-            self, input_file: SndSupportedFileR,
-            output_stream: Writer[bytes] | AsyncWriter[bytes]) -> None:
+            self, input_file: Reader[bytes] | StrOrBytesPath | int,
+            output_file: Writer[bytes] | AsyncWriter[bytes] | StrOrBytesPath) -> None:
         ...
 
     def async_encode_stream(
         self,
-        input_file: SndSupportedFileR,
-        output_stream: Writer[bytes] | AsyncWriter[bytes] | None = None
+        input_file: Reader[bytes] | StrOrBytesPath | int,
+        output_file: Writer[bytes] | AsyncWriter[bytes] | StrOrBytesPath | None = None
     ) -> AsyncGenerator[bytes, None] | Coroutine[Any, Any, None]:
 
-        if output_stream is None:
+        if output_file is None:
             return self.async_encode_stream_iter(input_file)
-        elif not is_async_writer(output_stream):
-            return asyncio.to_thread(self.encode_stream, input_file, output_stream)
+        elif not (is_writer(output_file) and is_async_writer(output_file)):
+            return asyncio.to_thread(self.encode_stream, input_file, output_file)
 
         async def _coro():
+            write = create_async_func(output_file.write)
             async for chunk in self.async_encode_stream_iter(input_file):
-                await async_func(output_stream.write, chunk)
+                await write(chunk)
 
         return _coro()
 
-    async def async_encode_stream_iter(self, input_file: SndSupportedFileR):
+    async def async_encode_stream_iter(self, input_file: Reader[bytes] | StrOrBytesPath
+                                       | int):
         if soundfile is None or soxr is None:
             raise ImportError("Do not have soundfile")
 
@@ -187,7 +207,7 @@ class SndfileDecode:
                  output_samplerate: int = 24000,
                  subtype: str | None = None,
                  compression_level: float | None = None,
-                 metadata: Dict[str, str] | None = None,
+                 metadata: dict[str, str] | None = None,
                  **kwargs: dict[str, Any]) -> None:
 
         self.soundfile_kwargs: dict[str,
@@ -200,19 +220,22 @@ class SndfileDecode:
         self.silk_decoder = SilkDecoder(output_samplerate)
         pass
 
-    def decode(self, input_bytes):
+    def decode_bytes(self, input_bytes):
         input_stream = BytesIO(input_bytes)
         output_stream = BytesIO()
         self.decode_stream(input_stream, output_stream)
         return output_stream.getvalue()
 
-    def decode_stream(self, input_stream: Reader[bytes],
-                      output_file: SndSupportedFileW):
+    def decode_stream(self, input_file: Reader[bytes] | StrOrBytesPath,
+                      output_file: Writer[bytes] | StrOrBytesPath | int):
         if soundfile is None or soxr is None:
             raise ImportError("Do not have soundfile")
 
+        context = nullcontext(input_file) if is_reader(input_file) else open(
+            input_file, "rb")
+
         with (soundfile.SoundFile(output_file, "w", channels=1, **self.soundfile_kwargs)
-              as f, self.silk_decoder as decoder):
+              as f, self.silk_decoder as decoder, context as input_stream):
 
             if self.metadata is not None:
                 for k, v in self.metadata.items():
@@ -221,22 +244,33 @@ class SndfileDecode:
             for chunk in decoder.decode_stream_iter(input_stream):
                 f.write(np.frombuffer(chunk, dtype=np.int16))
 
-    async def async_decode(self, input_bytes: bytes):
+    async def async_decode_bytes(self, input_bytes: bytes):
         input_stream = BytesIO(input_bytes)
         output_stream = BytesIO()
         await asyncio.to_thread(self.decode_stream, input_stream, output_stream)
         return output_stream.getvalue()
 
-    def async_decode_stream(self, input_stream: Reader[bytes] | AsyncReader[bytes],
-                            output_file: SndSupportedFileW):
+    @overload
+    async def async_decode_stream(self, input_file: Reader[bytes] | StrOrBytesPath,
+                                  output_file: Writer[bytes] | StrOrBytesPath | int) -> None:
+        ...
+
+    @overload
+    async def async_decode_stream(self, input_file: AsyncReader[bytes],
+                                  output_file: Writer[bytes] | StrOrBytesPath | int) -> None:
+        ...
+
+    def async_decode_stream(self, input_file: Reader[bytes] | AsyncReader[bytes]
+                            | StrOrBytesPath,
+                            output_file: Writer[bytes] | StrOrBytesPath | int):
         if soundfile is None or soxr is None:
             raise ImportError("Do not have soundfile")
 
         if asyncio.iscoroutinefunction(getattr(output_file, "read", None)):
             raise TypeError("'output_file' is not support AsyncWriter, "
                             "Please use Writer instead.")
-        elif not is_async_reader(input_stream):
-            return asyncio.to_thread(self.decode_stream, input_stream, output_file)
+        elif not (is_reader(input_file) and is_async_reader(input_file)):
+            return asyncio.to_thread(self.decode_stream, input_file, output_file)
 
         async def _coro():
             assert soundfile is not None
@@ -250,7 +284,7 @@ class SndfileDecode:
                     for k, v in self.metadata.items():
                         setattr(f, k, v)
 
-                async for chunk in decoder.async_decode_stream_iter(input_stream):
+                async for chunk in decoder.async_decode_stream_iter(input_file):
                     f.write(np.frombuffer(chunk, dtype=np.int16))
 
         return _coro

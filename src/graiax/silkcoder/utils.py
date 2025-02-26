@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import os
 import subprocess
@@ -7,7 +9,10 @@ from enum import Enum
 from io import BytesIO
 from pathlib import Path
 from shutil import which
-from typing import Any, Callable, Coroutine, ParamSpec, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Callable, Coroutine, ParamSpec, TypeVar, overload
+
+if TYPE_CHECKING:
+    from _typeshed import HasFileno, StrOrBytesPath
 
 if sys.version_info >= (3, 13):
     from typing import TypeIs
@@ -108,7 +113,7 @@ def is_libsndfile_supported(data: bytes | str):
         raise ValueError("Unsupport Data")
 
 
-def soxr_available(ffmpeg_path: str):
+def soxr_available(ffmpeg_path: StrOrBytesPath):
     p = subprocess.Popen(ffmpeg_path,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE,
@@ -152,8 +157,11 @@ def play_audio(source: str | bytes):
     p.join()
 
 
+# Fxxxing Type Hint
+
 P = ParamSpec("P")
 R = TypeVar("R")
+
 
 @overload
 async def async_func(func: Callable[P, Coroutine[Any, Any, R]], *args: P.args,
@@ -166,9 +174,11 @@ async def async_func(func: Callable[P, R | Coroutine[Any, Any, R]], *args: P.arg
                      **kwargs: P.kwargs) -> R:
     ...
 
+
 @overload
 async def async_func(func: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
     ...
+
 
 async def async_func(func, *args, **kwargs):
     if asyncio.iscoroutinefunction(func):
@@ -177,15 +187,69 @@ async def async_func(func, *args, **kwargs):
         return func(*args, **kwargs)
 
 
+@overload
+def create_async_func(
+        func: Callable[P, Coroutine[Any, Any,
+                                    R]]) -> Callable[P, Coroutine[Any, Any, R]]:
+    ...
+
+
+@overload
+def create_async_func(
+    func: Callable[P,
+                   R | Coroutine[Any, Any, R]]) -> Callable[P, Coroutine[Any, Any, R]]:
+    ...
+
+
+@overload
+def create_async_func(func: Callable[P, R]) -> Callable[P, Coroutine[Any, Any, R]]:
+    ...
+
+
+def create_async_func(func):
+    if asyncio.iscoroutinefunction(func):
+
+        async def _coro(*args, **kwargs):
+            return await func(*args, **kwargs)
+
+    else:
+
+        async def _coro(*args, **kwargs):
+            return func(*args, **kwargs)
+
+    return _coro
+
+
 def is_async_function(a: object, method_name: str) -> bool:
     method = getattr(a, method_name, None)
     return asyncio.iscoroutinefunction(method)
 
 
-# 类型保护函数
+def is_reader(a: Any) -> TypeIs[Reader | AsyncReader]:
+    return hasattr(getattr(a, "read", None), "__call__")
+
+
+def is_writer(a: Any) -> TypeIs[Writer | AsyncWriter]:
+    return hasattr(getattr(a, "read", None), "__call__")
+
+
 def is_async_reader(a: Reader | AsyncReader) -> TypeIs[AsyncReader]:
     return is_async_function(a, "read")
 
 
 def is_async_writer(a: Writer | AsyncWriter) -> TypeIs[AsyncWriter]:
     return is_async_function(a, "write")
+
+
+def has_fileno(a: Any) -> TypeIs[HasFileno]:
+    try:
+        a.fileno()
+        return True
+    except Exception:
+        return False
+
+
+def isStrOrBytesPath(a: Any) -> TypeIs[StrOrBytesPath]:
+    if isinstance(a, os.PathLike):
+        a = a.__fspath__()
+    return isinstance(a, str | bytes)
