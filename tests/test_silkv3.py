@@ -23,7 +23,6 @@ pcm_48000 = tmp_path / "test_48000.pcm"
 
 
 def setup_module():
-    tmp_path.mkdir(exist_ok=True)
     ffmpeg_path = get_ffmpeg()
     assert ffmpeg_path is not None, "Do not have ffmpeg"
     cmd = [ffmpeg_path, "-i", original_audio_long]
@@ -46,13 +45,6 @@ def setup_module():
     cmd[cmd.index(original_audio_long)] = original_audio
     ret = subprocess.run(cmd)
     ret.check_returncode()
-
-
-def teardown_module():
-    for file in tmp_path.iterdir():
-        file.unlink(missing_ok=True)
-    tmp_path.rmdir()
-
 
 class TestSilkV3:
 

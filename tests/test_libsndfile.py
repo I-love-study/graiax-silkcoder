@@ -13,7 +13,6 @@ from .utils import get_similarity
 
 resource_path = Path("tests/data/")
 tmp_path = resource_path / "tmp"
-tmp_path.mkdir(exist_ok=True)
 
 original_audio = resource_path / "ぼっちぼろまる feat.もっさ - つよがるガール (Anime Edit).m4a"
 original_audio_long = resource_path / "八奈見杏菜(CV.遠野ひかる)  - LOVE 2000.m4a"
@@ -34,12 +33,6 @@ def setup_module():
         audio_long
     ])
     ret.check_returncode()
-
-
-def teardown_module():
-    for file in tmp_path.iterdir():
-        file.unlink(missing_ok=True)
-    tmp_path.rmdir()
 
 class TestSndfile:
     def test_sndfile_encode_decode(self):

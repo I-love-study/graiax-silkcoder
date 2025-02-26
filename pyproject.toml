@@ -1,7 +1,7 @@
 [project]
 name = "graiax-silkcoder"
 version = "0.4.0a0" # WIP
-description = "transform audio file to silk"
+description = "transform audio file from/to silk"
 keywords = ["silkv3"]
 authors = [
     {name = "I Love Study", email = "1450069615@qq.com"},
@@ -35,20 +35,37 @@ run-setuptools = true
 # librosa 0.11.0 有 numpy 2.0 支持
 test = [
   "aiofile",
-  "librosa>=0.11.0rc0",
+  "librosa>=0.11.0rc1",
   "pytest",
   "pytest-sugar",
   "pytest-asyncio",
+  "pytest-xdist",
+  "filelock>=3.17.0"
 ]
 
 [tool.pytest.ini_options]
 addopts = "-ra -q"
-filterwarnings = ["ignore:'audioop' is deprecated:DeprecationWarning"]
+filterwarnings = [
+  "ignore:'audioop' is deprecated:DeprecationWarning",
+  "ignore:.*librosa.*:UserWarning",
+  "ignore:.*librosa.*:FutureWarning"
+]
 minversion = "8.0"
 testpaths = ["tests"]
+asyncio_default_fixture_loop_scope = "class"
 
 [tool.cibuildwheel]
-skip = "*-musllinux_* *_i686 *-win32"
+# 别用 32 位了朋友们
+skip = "*_i686 *-win32"
+enable = ["cpython-freethreading"]
+test-requires = "pytest"
+test-command = "pytest -m fast"
+
+[tool.cibuildwheel.windows]
+archs = ["x86_64", "arm64"]
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64", "aarch64"]
 
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]
