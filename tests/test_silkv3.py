@@ -1,14 +1,15 @@
 import asyncio
-import time
 import subprocess
+import time
 from io import BytesIO
 from pathlib import Path
 
 import pytest
-from .utils import get_similarity, package_pcm
 
 from graiax.silkcoder.silkv3 import SilkDecoder, SilkEncoder
 from graiax.silkcoder.utils import get_ffmpeg, soxr_available
+
+from .utils import get_similarity, package_pcm
 
 resource_path = Path("tests/data/")
 tmp_path = resource_path / "tmp"
