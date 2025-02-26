@@ -2,6 +2,9 @@
 from abc import abstractmethod
 from typing import TypeVar, Protocol
 
+# Why not use `SupportsRead` `SupportsWrite`?
+# Do not have `SupportsAsyncRead` `SupportsAsyncWrite`
+
 T = TypeVar("T", covariant=True)
 U = TypeVar("U", contravariant=True)
 
@@ -46,9 +49,6 @@ class AsyncReader(Protocol[T]):
         If "size" is specified, at most "size" items (bytes/characters) will be
         read.
         """
-
-
-U = TypeVar("U", contravariant=True)
 
 
 class AsyncWriter(Protocol[U]):
