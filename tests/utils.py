@@ -1,8 +1,15 @@
-import librosa
-import numpy as np
 import wave
 from io import BytesIO
+from pathlib import Path
 from typing import BinaryIO
+
+import librosa
+import numpy as np
+
+resource_path = Path(__file__).parent / "data"
+
+original_audio = resource_path / "ぼっちぼろまる feat.もっさ - つよがるガール (Anime Edit).m4a"
+original_audio_long = resource_path / "八奈見杏菜(CV.遠野ひかる)  - LOVE 2000.m4a"
 
 
 def package_pcm(audio: bytes,
@@ -23,12 +30,15 @@ def package_pcm(audio: bytes,
         wav.writeframes(audio)
 
     if output_stream is None:
-        return output_stream_.getvalue() # type: ignore
+        return output_stream_.getvalue()  # type: ignore
 
 
-def get_similarity(a1, a2):
-    audio1, sr1 = librosa.load(a1)
-    audio2, sr2 = librosa.load(a2)
+def get_similarity(a1,
+                   a2,
+                   a1_duration: float | None = None,
+                   a2_duration: float | None = None):
+    audio1, sr1 = librosa.load(a1, duration=a1_duration)
+    audio2, sr2 = librosa.load(a2, duration=a2_duration)
 
     #size = max(len(audio1), len(audio2))
     mfcc1 = librosa.feature.mfcc(y=audio1, sr=sr1)

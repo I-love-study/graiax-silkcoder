@@ -34,25 +34,29 @@ run-setuptools = true
 [tool.pdm.dev-dependencies]
 # librosa 0.11.0 有 numpy 2.0 支持
 test = [
-  "aiofile",
-  "librosa>=0.11.0rc1",
-  "pytest",
-  "pytest-sugar",
-  "pytest-asyncio",
-  "pytest-xdist",
-  "filelock>=3.17.0"
+    "aiofile",
+    "librosa>=0.11.0rc1",
+    "pytest",
+    "pytest-sugar",
+    "pytest-asyncio",
+    "pytest-xdist",
 ]
 
 [tool.pytest.ini_options]
-addopts = "-ra -q"
+addopts = "-ra -q -m 'not fast'"
 filterwarnings = [
-  "ignore:'audioop' is deprecated:DeprecationWarning",
-  "ignore:.*librosa.*:UserWarning",
-  "ignore:.*librosa.*:FutureWarning"
+    "ignore:'audioop' is deprecated:DeprecationWarning",
+    "ignore:.*librosa.*:UserWarning",
+    "ignore:.*librosa.*:FutureWarning",
+    "ignore::DeprecationWarning:audioread.rawread"
 ]
 minversion = "8.0"
+tmp_path_retention_count = 1
 testpaths = ["tests"]
 asyncio_default_fixture_loop_scope = "class"
+markers = [
+    "fast: marks tests as fast"
+]
 
 [tool.cibuildwheel]
 # 别用 32 位了朋友们
